@@ -1,0 +1,27 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <title>Подготовка к совещанию</title>
+  <link rel="stylesheet" href="{% static 'css/index.css'%}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+</head>
+<body>
+  <div class="main-menu">
+    <h1>Система отчетности</h1>
+    <div class="menu-buttons">
+      <button id="dataInputBtn" class="menu-button">Ввод данных</button>
+      <button id="dataViewBtn" class="menu-button">Просмотр данных</button>
+      <button id="dataPlanBtn" class="menu-button">Планирование</button>
+    </div>
+  </div>
+
+  <div id="app-container"></div>
+  <script>
+    const csrfToken = "{{ csrf_token }}";
+    const staticUrl = "{% static '' %}";
+  </script>
+  <script type="module" src="{% static 'js/main.js' %}"></script>
+</body>
+</html>
