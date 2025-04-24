@@ -5,6 +5,8 @@ venv/
 .venv/
 .env
 
+nginx.conf
+
 sent_emails/
 .sent_emails/
 .sent_emails/*
