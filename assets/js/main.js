@@ -320,7 +320,7 @@ function renderDataViewForm() {
       // Рендерим каждый отчет
       dataDisplay.innerHTML = reports.map(report =>
         renderReportSection(report, additionalData)
-        .join('');
+        .join(''));
     } catch (error) {
       console.error('Неожиданная ошибка:', error);
       showErrorInDisplay(dataDisplay, error);
