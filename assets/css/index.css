@@ -1,37 +1,51 @@
+/* Базовые стили и переменные */
 :root {
-    --bg-color: var(--tg-theme-bg-color, #f8fafc);
-    --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
-    --accent: var(--tg-theme-button-color, #3b82f6);
-    --accent-hover: var(--tg-theme-button-color, #2563eb);
-    --accent-text: var(--tg-theme-button-text-color, #ffffff);
-    --text: var(--tg-theme-text-color, #1e293b);
-    --hint: var(--tg-theme-hint-color, #64748b);
-    --link: var(--tg-theme-link-color, #3b82f6);
-    --border: var(--tg-theme-border-color, grey);
+    /* Цвета */
+    --primary: #3b82f6;
+    --primary-hover: #2563eb;
+    --success: #10b981;
+    --error: #f43f5e;
+    --warning: #eab308;
+
+    /* Текстовые цвета */
+    --text: #1e293b;
+    --text-light: #64748b;
+    --text-on-primary: #ffffff;
+
+    /* Фоны */
+    --bg: #f8fafc;
+    --card-bg: #ffffff;
+    --border: #e2e8f0;
+
+    /* Размеры */
     --radius: 16px;
     --radius-sm: 12px;
     --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
     --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 
-    /* Цвета групп с прозрачностью */
-    --apk-color: rgba(234, 179, 8, 0.2);     /* ярко-жёлтый */
-    --leak-color: rgba(16, 185, 129, 0.2);   /* ярко-зелёный */
-    --ozp-color: rgba(14, 165, 233, 0.2);    /* ярко-голубой */
-    --gaz-color: rgba(139, 92, 246, 0.2);    /* ярко-фиолетовый */
-    --ros-color: rgba(244, 63, 94, 0.2);     /* ярко-малиновый */
-    --rp-color: rgba(239, 68, 68, 0.2);      /* ярко-красный */
-    --pat-color: rgba(101, 163, 13, 0.2);    /* ярко-салатовый */
-    --tu-color: rgba(5, 150, 105, 0.2);      /* насыщенный тёмно-зелёный */
-    --kss-color: rgba(14, 165, 233, 0.2);    /* ярко-голубой */
+    /* Цвета категорий с прозрачностью */
+    --apk-color: rgba(234, 179, 8, 0.2);
+    --leak-color: rgba(16, 185, 129, 0.2);
+    --ozp-color: rgba(14, 165, 233, 0.2);
+    --gaz-color: rgba(139, 92, 246, 0.2);
+    --ros-color: rgba(244, 63, 94, 0.2);
+    --rp-color: rgba(239, 68, 68, 0.2);
+    --pat-color: rgba(101, 163, 13, 0.2);
+    --tu-color: rgba(5, 150, 105, 0.2);
+    --kss-color: rgba(14, 165, 233, 0.2);
   }
 
-  /* Темная тема */
-  @media (prefers-color-scheme: dark) {
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
     :root {
-      --border: var(--tg-theme-border-color, rgba(255, 255, 255, 0.5));
+      --text: #ffffff;
+      --text-light: #94a3b8;
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --border: #334155;
       --shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 
-      /* Более насыщенные цвета для темной темы */
+      /* Более темные цвета категорий */
       --apk-color: rgba(234, 179, 8, 0.15);
       --leak-color: rgba(16, 185, 129, 0.15);
       --ozp-color: rgba(14, 165, 233, 0.15);
@@ -44,7 +58,8 @@
     }
   }
 
-  * {
+/* Базовые стили */
+* {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
@@ -53,33 +68,32 @@
   body {
     margin: 0;
     padding: 20px;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: var(--bg-color);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background-color: var(--bg);
     color: var(--text);
     line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
   }
 
-  .form-container {
+  /* Общие стили для контейнеров */
+  .container {
     background: var(--card-bg);
     border-radius: var(--radius);
     padding: 24px;
     box-shadow: var(--shadow);
     max-width: 640px;
     margin: 0 auto;
-    transition: var(--transition);
   }
 
-  .form-container h2 {
+  /* Стили для заголовков с подчеркиванием */
+  .section-title {
     text-align: center;
     margin-bottom: 24px;
     font-size: 1.5rem;
-    color: var(--text);
     position: relative;
     padding-bottom: 12px;
   }
 
-  .form-container h2::after {
+  .section-title::after {
     content: '';
     position: absolute;
     bottom: 0;
@@ -87,45 +101,21 @@
     transform: translateX(-50%);
     width: 80px;
     height: 3px;
-    background: var(--accent);
+    background: var(--primary);
     border-radius: 3px;
   }
 
-  .title {
-    text-align: center;
-    margin-bottom: 24px;
-    font-size: 1.5rem;
-    font-weight: 700;
-    color: var(--text);
-    position: relative;
-    padding-bottom: 12px;
-  }
-
-  .title::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80px;
-    height: 3px;
-    background: var(--accent);
-    border-radius: 3px;
-  }
-
-  /* Стили для групп полей */
+  /* Стили для групп форм */
   .form-group-section {
     padding: 16px;
     border-radius: var(--radius-sm);
     margin-bottom: 20px;
     border: 1px solid var(--border);
-    background-color: var(--card-bg);
     position: relative;
     overflow: hidden;
-    transition: var(--transition);
   }
 
-  /* Декоративные элементы для групп */
+  /* Декоративная полоса слева для групп */
   .form-group-section::before {
     content: '';
     position: absolute;
@@ -135,9 +125,10 @@
     height: 100%;
   }
 
-  .form-group-apk::before { background: #eab308; }
-  .form-group-leak::before { background: #10b981; }
-  .form-group-ozp::before { background: #0ea5e9; }
+  /* Цвета для разных типов групп */
+  .form-group-apk::before { background: var(--warning); }
+  .form-group-leak::before { background: var(--success); }
+  .form-group-ozp::before { background: var(--ozp-color); }
   .form-group-gaz::before { background: #8b5cf6; }
   .form-group-ros::before { background: #f43f5e; }
   .form-group-rp::before { background: #ef4444; }
@@ -145,139 +136,38 @@
   .form-group-tu::before { background: #059669; }
   .form-group-kss::before { background: #0ea5e9; }
 
-  .group-title {
+/* Стили для кнопок */
+.button {
+    padding: 12px 16px;
+    border-radius: var(--radius-sm);
+    border: none;
     font-weight: 600;
-    margin-bottom: 16px;
-    color: var(--text);
+    cursor: pointer;
+    transition: var(--transition);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 8px;
   }
 
-  .form-group-apk .group-title::before { background: #eab308; }
-  .form-group-leak .group-title::before { background: #10b981; }
-  .form-group-ozp .group-title::before { background: #0ea5e9; }
-  .form-group-gaz .group-title::before { background: #8b5cf6; }
-  .form-group-ros .group-title::before { background: #f43f5e; }
-  .form-group-rp .group-title::before { background: #ef4444; }
-  .form-group-pat .group-title::before { background: #65a30d; }
-  .form-group-tu .group-title::before { background: #059669; }
-  .form-group-kss .group-title::before { background: #0ea5e9; }
-
-  /* Стили для элементов формы */
-  .form-group {
-    margin-bottom: 16px;
+  .button-primary {
+    background: var(--primary);
+    color: var(--text-on-primary);
   }
 
-  label {
-    display: block;
-    margin-bottom: 8px;
-    font-weight: 500;
-    font-size: 0.9rem;
-    color: var(--text);
+  .button-primary:hover {
+    background: var(--primary-hover);
   }
 
-  input,
-  textarea,
-  select {
-    width: 100%;
-    padding: 12px 16px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    font-size: 1rem;
-    background-color: var(--card-bg);
-    color: var(--text);
-    transition: var(--transition);
-  }
-
-  input:focus,
-  textarea:focus,
-  select:focus {
-    outline: none;
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
-  }
-
-  textarea {
-    min-height: 100px;
-    resize: vertical;
-    line-height: 1.5;
-  }
-
-  /* Стили для кнопок */
   .button-group {
     display: flex;
     gap: 12px;
     margin-bottom: 20px;
   }
 
-  .type-button {
-    flex: 1;
-    padding: 12px;
-    border-radius: var(--radius-sm);
-    border: none;
-    font-weight: 600;
-    cursor: pointer;
-    transition: var(--transition);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    background: rgba(59, 130, 246, 0.1);
-    color: var(--accent);
-  }
-
-  .type-button:hover {
-    background: rgba(59, 130, 246, 0.2);
-  }
-
-  .type-button.active {
-    background: var(--accent);
-    color: var(--accent-text);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-  }
-
-  .submit-button {
-    width: 100%;
-    padding: 14px;
-    border-radius: var(--radius-sm);
-    border: none;
-    background: var(--accent);
-    color: var(--accent-text);
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: var(--transition);
-    margin-top: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .submit-button:hover {
-    background: var(--accent-hover);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
-  }
-
-  /* Анимация загрузки при отправке */
-  .submit-button.loading::after {
-    content: '';
-    width: 16px;
-    height: 16px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    border-top-color: white;
-    border-radius: 50%;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    to { transform: rotate(360deg); }
-  }
-
-  /* Адаптация для мобильных */
-  @media (max-width: 480px) {
-    .form-container {
+  /* Адаптивные стили */
+  @media (max-width: 640px) {
+    .container {
       padding: 16px;
     }
 
@@ -286,315 +176,7 @@
     }
   }
 
-/* Главное меню */
-/* Добавляем в конец вашего index.css */
-
-/* Главное меню */
-.main-menu {
-    background: var(--card-bg);
-    border-radius: var(--radius);
-    padding: 32px 24px;
-    box-shadow: var(--shadow);
-    max-width: 640px;
-    margin: 40px auto;
-    text-align: center;
-    transition: var(--transition);
-  }
-
-  .main-menu h1 {
-    font-size: 1.75rem;
-    margin-bottom: 32px;
-    color: var(--text);
-    position: relative;
-    padding-bottom: 12px;
-  }
-
-  .main-menu h1::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80px;
-    height: 3px;
-    background: var(--accent);
-    border-radius: 3px;
-  }
-
-  .menu-buttons {
-    display: flex;
-    gap: 16px;
-    justify-content: center;
-    flex-wrap: wrap;
-  }
-
-  .menu-button {
-    flex: 1;
-    min-width: 200px;
-    padding: 16px;
-    border-radius: var(--radius-sm);
-    border: none;
-    font-weight: 600;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: var(--transition);
-    background: rgba(59, 130, 246, 0.1);
-    color: var(--accent);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-  }
-
-  .menu-button:hover {
-    background: rgba(59, 130, 246, 0.2);
-  }
-
-  .menu-button.active {
-    background: var(--accent);
-    color: var(--accent-text);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
-  }
-
-  /* Адаптация для мобильных */
-  @media (max-width: 640px) {
-    .main-menu {
-      margin: 20px auto;
-      padding: 24px 16px;
-    }
-
-    .menu-buttons {
-      flex-direction: column;
-    }
-
-    .menu-button {
-      width: 100%;
-    }
-  }
-
-  /* Контейнер для форм */
-  #app-container {
-    max-width: 640px;
-    margin: 0 auto;
-  }
-
-  /* Стили для просмотра данных */
-  .view-container {
-    background: var(--card-bg);
-    border-radius: var(--radius);
-    padding: 24px;
-    box-shadow: var(--shadow);
-    margin-top: 20px;
-  }
-
-  .view-container h2 {
-    text-align: center;
-    margin-bottom: 24px;
-    font-size: 1.5rem;
-    color: var(--text);
-    position: relative;
-    padding-bottom: 12px;
-  }
-
-  .view-container h2::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 80px;
-    height: 3px;
-    background: var(--accent);
-    border-radius: 3px;
-  }
-
-  .service-buttons {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
-    justify-content: center;
-    margin-bottom: 24px;
-  }
-
-  .service-btn {
-    padding: 10px 16px;
-    border-radius: var(--radius-sm);
-    border: none;
-    font-weight: 500;
-    font-size: 0.9rem;
-    cursor: pointer;
-    transition: var(--transition);
-    background: rgba(59, 130, 246, 0.1);
-    color: var(--accent);
-  }
-
-  .service-btn:hover {
-    background: rgba(59, 130, 246, 0.2);
-  }
-
-  .service-btn.active {
-    background: var(--accent);
-    color: var(--accent-text);
-    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
-  }
-
-  /* Адаптация для мобильных */
-  @media (max-width: 640px) {
-    .service-btn {
-      padding: 8px 12px;
-      font-size: 0.8rem;
-    }
-  }
-
-  /* Стили для отображения данных */
-  .data-section {
-    background: var(--card-bg);
-    border-radius: var(--radius-sm);
-    padding: 16px;
-    margin-top: 16px;
-    border: 1px solid var(--border);
-    animation: fadeIn 0.3s ease-out;
-  }
-
-  .data-group {
-    margin-bottom: 20px;
-  }
-
-  .data-group-title {
-    font-weight: 600;
-    justify-content: center;
-    margin-bottom: 8px;
-    color: black;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  /* Цвета для разных типов групп */
-  .data-group-title.apk { background-color: #fef3c7; } /* Бледно-жёлтый (янтарный) */
-  .data-group-title.leak { background-color: #d1fae5; } /* Бледно-зелёный (мята) */
-  .data-group-title.ozp { background-color: #bae6fd; } /* Бледно-голубой */
-  .data-group-title.gaz { background-color: #ddd6fe; } /* Бледно-фиолетовый */
-  .data-group-title.ros { background-color: #fbcfe8; } /* Бледно-малиновый */
-  .data-group-title.rp { background-color: #fecaca; } /* Бледно-красный */
-  .data-group-title.pat { background-color: #d9f99d; } /* Бледно-салатовый */
-  .data-group-title.tu { background-color: #bbf7d0; } /* Бледно-бирюзовый */
-  .data-group-title.kss { background-color: #c7d2fe; } /* Бледно-индиго */
-  .data-group-title.faults { background-color: #e5e7eb; } /* Светло-серый */
-  .data-group-title.tasks { background-color: #f3f4f6; } /* Ещё светлее серый */
-
-
-  .data-group .data-value {
-    white-space: pre-line; /* Сохраняет переносы строк */
-    line-height: 1.5;
-    padding: 8px 0;
-}
-
-    .data-group .data-item {
-        border-bottom: none;
-        padding: 0;
-    }
-
-
-  .data-item {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 0;
-    border-bottom: 1px dashed var(--border);
-  }
-
-  .data-item:last-child {
-    border-bottom: none;
-  }
-
-  .data-label {
-    font-weight: 500;
-    color: var(--hint);
-  }
-
-  .data-value {
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .data-header {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 15px;
-  }
-
-  /* Адаптация для мобильных */
-  @media (max-width: 640px) {
-    .main-menu {
-      margin: 20px auto;
-      padding: 24px 16px;
-    }
-
-    .menu-buttons {
-      flex-direction: column;
-    }
-
-    .menu-button {
-      width: 100%;
-    }
-
-    .service-buttons {
-      gap: 8px;
-    }
-
-    .service-btn {
-      padding: 8px 12px;
-      font-size: 0.8rem;
-    }
-  }
-
-  /* Анимации */
-  @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
-    to { opacity: 1; transform: translateY(0); }
-  }
-
-  .data-item.reason-item {
-    display: block; /* Меняем на блочное отображение */
-    padding: 8px 0;
-    border-bottom: none;
-}
-
-.reason-item .data-label {
-    display: block; /* Лейбл на всю ширину */
-    margin-bottom: 4px;
-    font-weight: 500;
-    color: var(--hint);
-}
-
-.reason-item .reason-text {
-    display: block; /* Текст причины на всю ширину */
-    width: 100%;
-    margin-top: 4px;
-    line-height: 1.5;
-    white-space: pre-line;
-}
-
-.success-notification {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--accent);
-    color: white;
-    padding: 12px 24px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    z-index: 1000;
-    animation: slideIn 0.3s ease-out;
-    transition: opacity 0.3s ease;
-}
-
-@keyframes slideIn {
-    from { bottom: -50px; opacity: 0; }
-    to { bottom: 20px; opacity: 1; }
-}
-
+/* Стили для уведомлений */
 .notification {
     position: fixed;
     bottom: 20px;
@@ -609,40 +191,230 @@
     color: white;
     max-width: 80%;
     text-align: center;
-}
+  }
 
-.success-notification {
-    background: var(--leak-color); /* Зеленый */
-}
+  .notification.success {
+    background: var(--success);
+  }
 
-.error-notification {
-    background: var(--ros-color); /* Красный */
-}
+  .notification.error {
+    background: var(--error);
+  }
 
-@keyframes slideIn {
-    from { bottom: -50px; opacity: 0; }
-    to { bottom: 20px; opacity: 1; }
-}
+  .notification.warning {
+    background: var(--warning);
+  }
 
+  /* Анимация появления уведомления */
+  @keyframes slideIn {
+    from {
+      bottom: -50px;
+      opacity: 0;
+    }
+    to {
+      bottom: 20px;
+      opacity: 1;
+    }
+  }
 
-.error {
-    background-color: #fee2e2;
-    color: #b91c1c;
+  /* Стили для состояний загрузки */
+  .loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1rem;
+    color: var(--text-light);
+  }
+
+  .loading::after {
+    content: '';
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-left: 8px;
+    border: 2px solid var(--border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* Стили для сообщений об ошибках и пустых данных */
+  .error {
+    background-color: rgba(244, 63, 94, 0.1);
+    color: var(--error);
     padding: 1rem;
     border-radius: var(--radius-sm);
     margin: 1rem 0;
-}
+    border-left: 3px solid var(--error);
+  }
 
-.error-detail {
+  .error-detail {
     font-size: 0.9em;
     margin-top: 0.5rem;
-    color: #7f1d1d;
-}
+    color: inherit;
+    opacity: 0.8;
+  }
 
-.no-data {
-    background-color: #f0fdf4;
-    color: #166534;
+  .no-data {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
     padding: 1rem;
     border-radius: var(--radius-sm);
     margin: 1rem 0;
-}
+    border-left: 3px solid var(--success);
+    text-align: center;
+  }
+
+  /* Специфические стили для групп данных */
+  .data-group {
+    margin-bottom: 1.5rem;
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+
+  .data-group-title {
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+
+  /* Цвета заголовков групп */
+  .data-group-title.apk { color: #b45309; background-color: var(--apk-color); }
+  .data-group-title.leak { color: #047857; background-color: var(--leak-color); }
+  .data-group-title.ozp { color: #0369a1; background-color: var(--ozp-color); }
+  .data-group-title.gaz { color: #6d28d9; background-color: var(--gaz-color); }
+  .data-group-title.ros { color: #be123c; background-color: var(--ros-color); }
+  .data-group-title.rp { color: #b91c1c; background-color: var(--rp-color); }
+  .data-group-title.pat { color: #3f6212; background-color: var(--pat-color); }
+  .data-group-title.tu { color: #065f46; background-color: var(--tu-color); }
+  .data-group-title.kss { color: #1e40af; background-color: var(--kss-color); }
+
+  /* Элементы данных */
+  .data-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed var(--border);
+  }
+
+  .data-item:last-child {
+    border-bottom: none;
+  }
+
+  .data-label {
+    font-weight: 500;
+    color: var(--text-light);
+  }
+
+  .data-value {
+    font-weight: 600;
+    text-align: right;
+    max-width: 60%;
+  }
+
+  /* Специальные стили для причин */
+  .reason-item {
+    margin-top: 0.5rem;
+  }
+
+  .reason-text {
+    background: rgba(0,0,0,0.03);
+    padding: 0.75rem;
+    border-radius: var(--radius-sm);
+    margin-top: 0.25rem;
+    font-size: 0.95em;
+    line-height: 1.5;
+    white-space: pre-line;
+  }
+
+  /* Адаптация для мобильных устройств */
+  @media (max-width: 480px) {
+    .data-item {
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .data-value {
+      max-width: 100%;
+      text-align: left;
+    }
+
+    .notification {
+      max-width: 90%;
+      padding: 10px 16px;
+      font-size: 0.9rem;
+    }
+  }
+
+  /* Стили для полей с причинами */
+  .reason-field {
+    background: rgba(0,0,0,0.02);
+    padding: 12px;
+    border-radius: var(--radius-sm);
+    margin-top: 8px;
+    animation: fadeIn 0.3s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* Специальные стили для форм */
+  .reason-field label {
+    font-size: 0.85rem;
+    margin-bottom: 4px;
+    display: block;
+    color: var(--text-light);
+  }
+
+  .reason-field textarea {
+    min-height: 80px;
+    background: rgba(255,255,255,0.7);
+  }
+
+  /* Стили для разделов с цифрами */
+  .number-input-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .number-input-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .number-input-item label {
+    font-size: 0.8rem;
+    margin-bottom: 4px;
+  }
+
+  /* Темная тема - дополнительные стили */
+  @media (prefers-color-scheme: dark) {
+    .reason-text {
+      background: rgba(255,255,255,0.05);
+    }
+
+    .reason-field {
+      background: rgba(255,255,255,0.03);
+    }
+
+    .data-group {
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .data-value {
+      font-weight: 500;
+    }
+  }
