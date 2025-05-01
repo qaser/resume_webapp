@@ -96,68 +96,34 @@ document.addEventListener('DOMContentLoaded', function() {
         dataInputBtn.click();
     }
 
+    async function loadTemplate(templateName, data = {}) {
+        try {
+            const response = await fetch(`${basePath}/${templateName}.html`);
+            if (!response.ok) throw new Error('Template not found');
+
+            let html = await response.text();
+
+            // Простая замена переменных в шаблоне (опционально)
+            for (const [key, value] of Object.entries(data)) {
+                html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
+            }
+
+            return html;
+        } catch (error) {
+            console.error(`Error loading template ${templateName}:`, error);
+            return `<div class="error">Ошибка загрузки шаблона: ${templateName}</div>`;
+        }
+    }
+
     // Функция для отображения формы ввода данных (остается без изменений)
-    function renderDataInputForm() {
-        appContainer.innerHTML = `
-            <div class="form-container">
-                <h2>Ввод данных</h2>
-                <div class="form-group">
-                    <label for="serviceSelect">Служба</label>
-                    <select id="serviceSelect" required>
-                        <option value="">-- Выберите --</option>
-                        <option value="КС-1,4">КС-1,4</option>
-                        <option value="КС-2,3">КС-2,3</option>
-                        <option value="КС-5,6">КС-5,6</option>
-                        <option value="КС-7,8">КС-7,8</option>
-                        <option value="КС-9,10">КС-9,10</option>
-                        <option value="АиМО">АиМО</option>
-                        <option value="ЭВС">ЭВС</option>
-                        <option value="ЛЭС">ЛЭС</option>
-                        <option value="СЗК">СЗК</option>
-                        <option value="Связь">Связь</option>
-                        <option value="ВПО">ВПО</option>
-                    </select>
-                </div>
-
-                <div class="form-group">
-                    <label>Тип отчета</label>
-                    <div class="button-group">
-                        <button type="button" class="type-button" data-type="daily">Ежедневный</button>
-                        <button type="button" class="type-button" data-type="weekly">Еженедельный</button>
-                    </div>
-                </div>
-
-                <form id="reportForm" style="display:none;">
-                    <div id="dynamicFields"></div>
-                    <button type="submit" class="submit-button">Отправить</button>
-                </form>
-            </div>
-        `;
-
+    async function renderDataInputForm() {
+        appContainer.innerHTML = await loadTemplate('data-input-form');
         initDataInputForm();
     }
 
     // Функция для отображения формы просмотра данных (остается без изменений)
-    function renderDataViewForm() {
-        appContainer.innerHTML = `
-            <div class="view-container">
-                <h2>Просмотр данных</h2>
-                <div class="service-buttons" id="serviceButtons">
-                    <button class="service-btn" data-service="КС-1,4">КС-1,4</button>
-                    <button class="service-btn" data-service="КС-2,3">КС-2,3</button>
-                    <button class="service-btn" data-service="КС-5,6">КС-5,6</button>
-                    <button class="service-btn" data-service="КС-7,8">КС-7,8</button>
-                    <button class="service-btn" data-service="КС-9,10">КС-9,10</button>
-                    <button class="service-btn" data-service="АиМО">АиМО</button>
-                    <button class="service-btn" data-service="ЭВС">ЭВС</button>
-                    <button class="service-btn" data-service="ЛЭС">ЛЭС</button>
-                    <button class="service-btn" data-service="СЗК">СЗК</button>
-                    <button class="service-btn" data-service="Связь">Связь</button>
-                    <button class="service-btn" data-service="ВПО">ВПО</button>
-                </div>
-                <div id="dataDisplay"></div>
-            </div>
-        `;
+    async function renderDataViewForm() {
+        appContainer.innerHTML = await loadTemplate('data-view-form');
 
         // Добавляем обработчик для кнопок
         document.querySelectorAll('.service-btn').forEach(btn => {
@@ -177,41 +143,61 @@ document.addEventListener('DOMContentLoaded', function() {
         const typeButtons = document.querySelectorAll(".type-button");
 
         typeButtons.forEach(button => {
-            button.addEventListener("click", () => {
+            button.addEventListener("click", async () => {
                 typeButtons.forEach(btn => btn.classList.remove("active"));
                 button.classList.add("active");
 
                 const type = button.dataset.type;
-                renderFields(type);
-                reportForm.style.display = "block";
+                try {
+                    dynamicFields.innerHTML = await loadTemplate(type);
+                    reportForm.style.display = "block";
+
+                    // Инициализация обработчиков для полей ввода
+                    const allInputs = dynamicFields.querySelectorAll("input[type='number']");
+                    allInputs.forEach(input => {
+                        if (input.name.includes("undone")) {
+                            input.addEventListener("input", () => {
+                                const container = input.closest(".form-group-section");
+                                const reasonField = container.querySelector(".reason-field");
+                                if (!reasonField) return;
+
+                                const val = parseInt(input.value.trim());
+                                reasonField.style.display = val > 0 ? "block" : "none";
+                            });
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error loading form:', error);
+                    dynamicFields.innerHTML = `<p>Error loading form: ${error.message}</p>`;
+                }
             });
         });
 
-        async function renderFields(type) {
-            try {
-                const response = await fetch(`${basePath}${type}.html`);
-                if (!response.ok) throw new Error('Network response was not ok');
+        // async function renderFields(type) {
+        //     try {
+        //         const response = await fetch(`${basePath}${type}.html`);
+        //         if (!response.ok) throw new Error('Network response was not ok');
 
-                dynamicFields.innerHTML = await response.text();
+        //         dynamicFields.innerHTML = await response.text();
 
-                const allInputs = dynamicFields.querySelectorAll("input[type='number']");
-                allInputs.forEach(input => {
-                    if (input.name.includes("undone")) {
-                        input.addEventListener("input", () => {
-                            const container = input.closest(".form-group-section");
-                            const reasonField = container.querySelector(".reason-field");
-                            if (!reasonField) return;
+        //         const allInputs = dynamicFields.querySelectorAll("input[type='number']");
+        //         allInputs.forEach(input => {
+        //             if (input.name.includes("undone")) {
+        //                 input.addEventListener("input", () => {
+        //                     const container = input.closest(".form-group-section");
+        //                     const reasonField = container.querySelector(".reason-field");
+        //                     if (!reasonField) return;
 
-                            const val = parseInt(input.value.trim());
-                            reasonField.style.display = val > 0 ? "block" : "none";
-                        });
-                    }
-                });
-            } catch (error) {
-                console.error('Error loading HTML:', error);
-                dynamicFields.innerHTML = `<p>Error loading form: ${error.message}</p>`;
-            }
-        }
+        //                     const val = parseInt(input.value.trim());
+        //                     reasonField.style.display = val > 0 ? "block" : "none";
+        //                 });
+        //             }
+        //         });
+        //     } catch (error) {
+        //         console.error('Error loading HTML:', error);
+        //         dynamicFields.innerHTML = `<p>Error loading form: ${error.message}</p>`;
+        //     }
+        // }
 
         // Отправка формы (изменена для использования api.submitReport)
         reportForm.addEventListener("submit", async (e) => {
@@ -400,131 +386,14 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // Функция для отображения формы планирования (изменена для использования api.savePlan)
-    function renderPlanningForm() {
+    async function renderPlanningForm() {
         const currentYear = new Date().getFullYear();
         const years = [currentYear, currentYear + 1, currentYear + 2];
 
-        appContainer.innerHTML = `
-            <div class="form-container">
-                <h2>Планирование</h2>
-                <form id="planningForm">
-                    <div class="form-group">
-                        <label for="planServiceSelect">Служба</label>
-                        <select id="planServiceSelect" required>
-                            <option value="">-- Выберите --</option>
-                            <option value="КС-1,4">КС-1,4</option>
-                            <option value="КС-2,3">КС-2,3</option>
-                            <option value="КС-5,6">КС-5,6</option>
-                            <option value="КС-7,8">КС-7,8</option>
-                            <option value="КС-9,10">КС-9,10</option>
-                            <option value="АиМО">АиМО</option>
-                            <option value="ЭВС">ЭВС</option>
-                            <option value="ЛЭС">ЛЭС</option>
-                            <option value="СЗК">СЗК</option>
-                            <option value="Связь">Связь</option>
-                            <option value="ВПО">ВПО</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="planYearSelect">Год планирования</label>
-                        <select id="planYearSelect" required>
-                            ${years.map(year => `<option value="${year}">${year}</option>`).join('')}
-                        </select>
-                    </div>
-
-                    <div class="form-group-section">
-                        <div class="group-title">Замечания</div>
-                        <div class="form-group">
-                            <label>Всего замечаний ОЗП</label>
-                            <input type="number" name="ozp_total">
-                        </div>
-                        <div class="form-group">
-                            <label>Всего замечаний Газнадзор</label>
-                            <input type="number" name="gaz_total">
-                        </div>
-                        <div class="form-group">
-                            <label>Всего замечаний Ростехнадзор</label>
-                            <input type="number" name="ros_total">
-                        </div>
-                    </div>
-
-                    <div class="form-group-section form-group-rp">
-                        <div class="group-title">Рационализаторские предложения (РП)</div>
-                        <div class="form-group">
-                            <label>Всего на год</label>
-                            <input type="number" name="rp_total">
-                        </div>
-                        <div class="form-group">
-                            <label>1 квартал</label>
-                            <input type="number" name="rp_q1">
-                        </div>
-                        <div class="form-group">
-                            <label>2 квартал</label>
-                            <input type="number" name="rp_q2">
-                        </div>
-                        <div class="form-group">
-                            <label>3 квартал</label>
-                            <input type="number" name="rp_q3">
-                        </div>
-                        <div class="form-group">
-                            <label>4 квартал</label>
-                            <input type="number" name="rp_q4">
-                        </div>
-                    </div>
-
-                    <div class="form-group-section form-group-pat">
-                        <div class="group-title">ПАТ</div>
-                        <div class="form-group">
-                            <label>Всего на год</label>
-                            <input type="number" name="pat_total">
-                        </div>
-                        <div class="form-group">
-                            <label>1 квартал</label>
-                            <input type="number" name="pat_q1">
-                        </div>
-                        <div class="form-group">
-                            <label>2 квартал</label>
-                            <input type="number" name="pat_q2">
-                        </div>
-                        <div class="form-group">
-                            <label>3 квартал</label>
-                            <input type="number" name="pat_q3">
-                        </div>
-                        <div class="form-group">
-                            <label>4 квартал</label>
-                            <input type="number" name="pat_q4">
-                        </div>
-                    </div>
-
-                    <div class="form-group-section form-group-tu">
-                        <div class="group-title">Техническая учёба (ТУ)</div>
-                        <div class="form-group">
-                            <label>Всего на год</label>
-                            <input type="number" name="tu_total">
-                        </div>
-                        <div class="form-group">
-                            <label>1 квартал</label>
-                            <input type="number" name="tu_q1">
-                        </div>
-                        <div class="form-group">
-                            <label>2 квартал</label>
-                            <input type="number" name="tu_q2">
-                        </div>
-                        <div class="form-group">
-                            <label>3 квартал</label>
-                            <input type="number" name="tu_q3">
-                        </div>
-                        <div class="form-group">
-                            <label>4 квартал</label>
-                            <input type="number" name="tu_q4">
-                        </div>
-                    </div>
-
-                    <button type="submit" class="submit-button">Сохранить план</button>
-                </form>
-            </div>
-        `;
+        // Загружаем шаблон и передаем данные для динамических полей
+        appContainer.innerHTML = await loadTemplate('planning-form', {
+            yearOptions: years.map(year => `<option value="${year}">${year}</option>`).join('')
+        });
 
         // Обработчик отправки формы планирования (использует api.savePlan)
         document.getElementById('planningForm').addEventListener('submit', async function(e) {
