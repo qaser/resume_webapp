@@ -1,6 +1,65 @@
 const scriptPath = document.currentScript?.src || new URL(import.meta.url).pathname;
 const basePath = scriptPath.substring(0, scriptPath.lastIndexOf('/') + 1);
 
+// API service
+const api = {
+    // Отправка отчета
+    async submitReport(data) {
+        const response = await fetch('/api/reports/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    },
+
+    // Получение отчетов по службе
+    async getReports(service) {
+        const response = await fetch(`/api/reports/?service=${encodeURIComponent(service)}`);
+        return await response.json();
+    },
+
+    // Получение планов
+    async getPlans(department, year) {
+        const response = await fetch(`/api/plans/?department=${encodeURIComponent(department)}&year=${year}`);
+        return await response.json();
+    },
+
+    // Получение данных по утечкам
+    async getLeaks(department, year) {
+        const response = await fetch(`/api/leaks/?department=${encodeURIComponent(department)}&year=${year}`);
+        return await response.json();
+    },
+
+    // Получение замечаний
+    async getRemarks(department, year) {
+        const response = await fetch(`/api/remarks/?department=${encodeURIComponent(department)}&year=${year}`);
+        return await response.json();
+    },
+
+    // Получение данных по КСС (только для ЛЭС)
+    async getKss(year) {
+        const response = await fetch(`/api/kss/?year=${year}`);
+        return await response.json();
+    },
+
+    // Сохранение плана
+    async savePlan(data) {
+        const response = await fetch('/api/planning/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function() {
     const appContainer = document.getElementById("app-container");
     const dataInputBtn = document.getElementById("dataInputBtn");
@@ -11,7 +70,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initApp();
 
     function initApp() {
-        // Обработчики для кнопок меню
+        // Обработчики для кнопок меню (остается без изменений)
         dataInputBtn.addEventListener("click", () => {
             dataInputBtn.classList.add("active");
             dataViewBtn.classList.remove("active");
@@ -37,7 +96,7 @@ document.addEventListener('DOMContentLoaded', function() {
         dataInputBtn.click();
     }
 
-    // Функция для отображения формы ввода данных
+    // Функция для отображения формы ввода данных (остается без изменений)
     function renderDataInputForm() {
         appContainer.innerHTML = `
             <div class="form-container">
@@ -78,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function() {
         initDataInputForm();
     }
 
-    // Функция для отображения формы просмотра данных
+    // Функция для отображения формы просмотра данных (остается без изменений)
     function renderDataViewForm() {
         appContainer.innerHTML = `
             <div class="view-container">
@@ -103,19 +162,15 @@ document.addEventListener('DOMContentLoaded', function() {
         // Добавляем обработчик для кнопок
         document.querySelectorAll('.service-btn').forEach(btn => {
             btn.addEventListener('click', async function() {
-                // Устанавливаем активную кнопку
                 document.querySelectorAll('.service-btn').forEach(b => b.classList.remove('active'));
                 this.classList.add('active');
-
-                // Сохраняем выбранную службу в data-атрибут контейнера
                 appContainer.dataset.currentDepartment = this.dataset.service;
-
                 await loadServiceData(this.dataset.service);
             });
         });
     }
 
-    // Инициализация формы ввода данных
+    // Инициализация формы ввода данных (изменена для использования api)
     function initDataInputForm() {
         const reportForm = document.getElementById("reportForm");
         const dynamicFields = document.getElementById("dynamicFields");
@@ -139,7 +194,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 dynamicFields.innerHTML = await response.text();
 
-                // Логика отображения reason-полей
                 const allInputs = dynamicFields.querySelectorAll("input[type='number']");
                 allInputs.forEach(input => {
                     if (input.name.includes("undone")) {
@@ -159,7 +213,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Отправка формы
+        // Отправка формы (изменена для использования api.submitReport)
         reportForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -173,30 +227,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     csrfmiddlewaretoken: csrfToken
                 };
 
-                // Собираем все данные формы
                 formData.forEach((value, key) => {
                     data[key] = value;
                 });
 
-                const response = await fetch('/api/reports/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken,
-                    },
-                    body: JSON.stringify(data)
-                });
+                const result = await api.submitReport(data);
 
-                const result = await response.json();
-
-                if (response.ok) {
-                    // Показываем уведомление в интерфейсе
+                if (result.status === 'success') {
                     showNotification('✓ Данные успешно сохранены', 'success');
-
-                    // Сбрасываем форму
                     reportForm.reset();
 
-                    // Возвращаем на начальный экран через 1 секунду
                     setTimeout(() => {
                         dataInputBtn.click();
                         renderDataInputForm();
@@ -206,21 +246,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('Ошибка:', error);
-                // Показываем ошибку в интерфейсе
                 showNotification(error.message || 'Ошибка при сохранении данных', 'error');
             } finally {
                 submitBtn.classList.remove('loading');
             }
         });
 
-        // Функция для показа уведомлений
         function showNotification(message, type = 'success') {
             const notification = document.createElement('div');
             notification.className = `notification ${type}-notification`;
             notification.innerHTML = message;
             document.body.appendChild(notification);
 
-            // Убираем уведомление через 3 секунды
             setTimeout(() => {
                 notification.style.opacity = '0';
                 setTimeout(() => notification.remove(), 300);
@@ -233,13 +270,8 @@ document.addEventListener('DOMContentLoaded', function() {
         dataDisplay.innerHTML = '<div class="loading">Загрузка данных...</div>';
 
         try {
-            const response = await fetch(`/api/reports/?service=${encodeURIComponent(service)}`);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
+            // Используем api.getReports вместо прямого fetch
+            const data = await api.getReports(service);
 
             if (data.status === 'success') {
                 await renderServiceData(data.reports);
@@ -278,52 +310,14 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const isLES = currentDepartment === 'ЛЭС';
 
-            // Создаем объект для хранения всех данных
-            const allData = {
-                plans: { status: 'error', data: null },
-                leaks: { status: 'error', data: null },
-                remarks: { status: 'error', data: null },
-                kss: { status: 'success', data: { total: 0 } } // Значение по умолчанию для KSS
-            };
-
-            // Загружаем основные данные с обработкой ошибок для каждого запроса
-            try {
-                const plansResponse = await fetch(`/api/plans/?department=${encodeURIComponent(currentDepartment)}&year=${currentYear}`);
-                allData.plans = await plansResponse.json();
-            } catch (e) {
-                console.error('Ошибка загрузки планов:', e);
-            }
-
-            try {
-                const leaksResponse = await fetch(`/api/leaks/?department=${encodeURIComponent(currentDepartment)}&year=${currentYear}`);
-                allData.leaks = await leaksResponse.json();
-            } catch (e) {
-                console.error('Ошибка загрузки утечек:', e);
-            }
-
-            try {
-                const remarksResponse = await fetch(`/api/remarks/?department=${encodeURIComponent(currentDepartment)}&year=${currentYear}`);
-                allData.remarks = await remarksResponse.json();
-            } catch (e) {
-                console.error('Ошибка загрузки замечаний:', e);
-            }
-
-            // Загружаем KSS только для ЛЭС
-            if (isLES) {
-                try {
-                    const kssResponse = await fetch(`/api/kss/?year=${currentYear}`);
-                    allData.kss = await kssResponse.json();
-                } catch (e) {
-                    console.error('Ошибка загрузки KSS:', e);
-                }
-            }
-
-            // Проверяем минимально необходимые данные
-            if (allData.plans.status !== 'success' ||
-                allData.leaks.status !== 'success' ||
-                allData.remarks.status !== 'success') {
-                console.warn('Не все основные данные загружены успешно', allData);
-            }
+            // Используем API методы для загрузки данных
+            const [plans, leaks, remarks, kss] = await Promise.all([
+                api.getPlans(currentDepartment, currentYear).catch(e => ({ status: 'error', data: null })),
+                api.getLeaks(currentDepartment, currentYear).catch(e => ({ status: 'error', data: null })),
+                api.getRemarks(currentDepartment, currentYear).catch(e => ({ status: 'error', data: null })),
+                isLES ? api.getKss(currentYear).catch(e => ({ status: 'error', data: null })) :
+                       Promise.resolve({ status: 'success', data: { total: 0 } })
+            ]);
 
             let html = '';
 
@@ -333,13 +327,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 const data = report.data;
 
                 const getRemarkData = (type) => {
-                    if (!allData.remarks.data?.remarks) return null;
-                    return allData.remarks.data.remarks.find(r => r.value === type) || null;
+                    if (!remarks.data?.remarks) return null;
+                    return remarks.data.remarks.find(r => r.value === type) || null;
                 };
 
                 const getPlanData = (type) => {
-                    if (!allData.plans.data?.plans) return null;
-                    return allData.plans.data.plans.find(p => p.value === type) || null;
+                    if (!plans.data?.plans) return null;
+                    return plans.data.plans.find(p => p.value === type) || null;
                 };
 
                 html += `
@@ -355,8 +349,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${data.apk2 ? renderCategory('АПК II уровень', data.apk2) : ''}
 
                         ${data.leak ? renderCategory('Утечки газа', data.leak, {
-                            total: allData.leaks.data?.total || 0,
-                            done: allData.leaks.data?.done || 0
+                            total: leaks.data?.total || 0,
+                            done: leaks.data?.done || 0
                         }) : ''}
 
                         ${data.ozp ? renderCategory('Подготовка к ОЗП', data.ozp, {
@@ -387,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }) : ''}
 
                         ${(data.kss && isLES) ? renderCategory('Кольцевые сварные соединения', data.kss, {
-                            total: allData.kss.data?.total || 0
+                            total: kss.data?.total || 0
                         }) : ''}
                     </div>
                 `;
@@ -405,159 +399,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function renderCategory(title, data, additionalData = {}) {
-        let items = '';
-        const categoryClass = getCategoryClass(title);
-
-        // Добавляем дополнительные данные в начало
-        if (additionalData.total !== undefined) {
-            let label = '';
-
-            // Определяем подпись в зависимости от типа категории
-            if (['Рационализаторские предложения', 'ПАТ', 'Техническая учёба'].includes(title)) {
-                label = 'План на текущий год';
-            }
-            else if (['Подготовка к ОЗП', 'Замечания Газнадзора', 'Замечания Ростехнадзора'].includes(title)) {
-                label = 'Всего замечаний';
-            }
-            else if (title === 'Кольцевые сварные соединения') {
-                label = 'Всего КСС';
-            }
-            else {
-                label = 'Всего за текущий год';
-            }
-
-            items += `
-                <div class="data-item">
-                    <span class="data-label">${label}:</span>
-                    <span class="data-value">${additionalData.total || 0}</span>
-                </div>
-            `;
-        }
-
-        if (additionalData.currentQuarter !== undefined) {
-            items += `
-                <div class="data-item">
-                    <span class="data-label">План на текущий квартал:</span>
-                    <span class="data-value">${additionalData.currentQuarter || 0}</span>
-                </div>
-            `;
-        }
-
-        // Остальной код функции без изменений
-        for (const [key, value] of Object.entries(data)) {
-            if (!value && value !== 0) continue;
-
-            if (key.includes('reason')) {
-                if (!value) continue;
-
-                items += `
-                    <div class="data-item reason-item">
-                        <span class="data-label">${getFieldLabel(key)}:</span>
-                        <div class="data-value reason-text">${value}</div>
-                    </div>
-                `;
-            } else {
-                items += `
-                    <div class="data-item">
-                        <span class="data-label">${getFieldLabel(key)}:</span>
-                        <span class="data-value">${value}</span>
-                    </div>
-                `;
-            }
-        }
-
-        return `
-            <div class="data-group">
-                <div class="data-group-title ${categoryClass}">${title}</div>
-                ${items}
-            </div>
-        `;
-    }
-
-    function renderDataGroup(title, value) {
-        if (!value) return '';
-
-        const categoryClass = getCategoryClass(title);
-
-        return `
-            <div class="data-group">
-                <div class="data-group-title ${categoryClass}">${title}</div>
-                <div class="data-item">
-                    <div class="data-value">${value}</div>
-                </div>
-            </div>
-        `;
-    }
-
-    // Функция для определения класса по названию категории
-    function getCategoryClass(title) {
-        const categoryMap = {
-            'АПК I уровень': 'apk',
-            'АПК II уровень': 'apk',
-            'Утечки газа': 'leak',
-            'Подготовка к ОЗП': 'ozp',
-            'Замечания Газнадзора': 'gaz',
-            'Замечания Ростехнадзора': 'ros',
-            'Рационализаторские предложения': 'rp',
-            'ПАТ': 'pat',
-            'Техническая учёба': 'tu',
-            'Кольцевые сварные соединения': 'kss special', // Добавляем special класс
-            'Задания на день': 'tasks',
-            'Замечания по оборудованию': 'faults'
-        };
-
-        return categoryMap[title] || '';
-    }
-
-    // Функция для получения читаемого названия поля
-    function getFieldLabel(fieldName) {
-        const labels = {
-            // Общие поля
-            'tasks': 'Задания на день',
-            'faults': 'Замечания по оборудованию',
-
-            // АПК
-            'apk_total': 'Всего замечаний',
-            'apk_done': 'Устранено',
-            'apk_undone': 'Не устранено',
-            'apk_reason_undone': 'Причина неустранения',
-            'apk2_total': 'Всего замечаний',
-            'apk2_done': 'Устранено',
-            'apk2_undone': 'Не устранено',
-            'apk2_reason_undone': 'Причина неустранения',
-
-            // Утечки
-            'leak_total': 'Обнаружено утечек',
-            'leak_done': 'Устранено утечек',
-
-            // Замечания
-            'ozp_done': 'Устранено',
-            'ozp_undone': 'Не устранено',
-            'ozp_reason_undone': 'Причина неустранения',
-            'gaz_done': 'Устранено',
-            'gaz_undone': 'Не устранено',
-            'gaz_reason_undone': 'Причина неустранения',
-            'ros_done': 'Устранено',
-            'ros_undone': 'Не устранено',
-            'ros_reason_undone': 'Причина неустранения',
-
-            // Рационализаторские предложения
-            'rp_done': 'Подано',
-            'rp_inwork': 'В работе',
-
-            // ПАТ и ТУ
-            'pat_done': 'Проведено',
-            'tu_done': 'Проведено',
-
-            // КСС
-            'kss_done': 'Выполнено'
-        };
-
-        return labels[fieldName] || fieldName;
-    }
-
-    // функция для отображения формы планирования
+    // Функция для отображения формы планирования (изменена для использования api.savePlan)
     function renderPlanningForm() {
         const currentYear = new Date().getFullYear();
         const years = [currentYear, currentYear + 1, currentYear + 2];
@@ -684,7 +526,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
         `;
 
-        // Обработчик отправки формы планирования
+        // Обработчик отправки формы планирования (использует api.savePlan)
         document.getElementById('planningForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -698,36 +540,14 @@ document.addEventListener('DOMContentLoaded', function() {
                     csrfmiddlewaretoken: csrfToken
                 };
 
-                // Собираем все данные формы
                 formData.forEach((value, key) => {
                     if (value) data[key] = value;
                 });
 
-                const response = await fetch('/api/planning/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': csrfToken,
-                    },
-                    body: JSON.stringify(data)
-                });
+                const result = await api.savePlan(data);
 
-                const result = await response.json();
-
-                if (response.ok) {
-                    // Показываем уведомление в интерфейсе
-                    const notification = document.createElement('div');
-                    notification.className = 'success-notification';
-                    notification.innerHTML = '✓ Данные планирования сохранены';
-                    document.body.appendChild(notification);
-
-                    // Убираем уведомление через 2 секунды
-                    setTimeout(() => {
-                        notification.style.opacity = '0';
-                        setTimeout(() => notification.remove(), 300);
-                    }, 4000);
-
-                    // Возвращаем на начальный экран
+                if (result.status === 'success') {
+                    showNotification('✓ Данные планирования сохранены', 'success');
                     setTimeout(() => {
                         dataInputBtn.click();
                         renderDataInputForm();
@@ -737,11 +557,145 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             } catch (error) {
                 console.error('Ошибка:', error);
-                // Показываем ошибку только если что-то пошло не так
-                alert(error.message || 'Ошибка при сохранении данных планирования');
+                showNotification(error.message || 'Ошибка при сохранении данных планирования', 'error');
             } finally {
                 submitBtn.classList.remove('loading');
             }
         });
+    }
+
+    // Вспомогательные функции (остаются без изменений)
+    function renderCategory(title, data, additionalData = {}) {
+        let items = '';
+        const categoryClass = getCategoryClass(title);
+
+        if (additionalData.total !== undefined) {
+            let label = '';
+
+            if (['Рационализаторские предложения', 'ПАТ', 'Техническая учёба'].includes(title)) {
+                label = 'План на текущий год';
+            }
+            else if (['Подготовка к ОЗП', 'Замечания Газнадзора', 'Замечания Ростехнадзора'].includes(title)) {
+                label = 'Всего замечаний';
+            }
+            else if (title === 'Кольцевые сварные соединения') {
+                label = 'Всего КСС';
+            }
+            else {
+                label = 'Всего за текущий год';
+            }
+
+            items += `
+                <div class="data-item">
+                    <span class="data-label">${label}:</span>
+                    <span class="data-value">${additionalData.total || 0}</span>
+                </div>
+            `;
+        }
+
+        if (additionalData.currentQuarter !== undefined) {
+            items += `
+                <div class="data-item">
+                    <span class="data-label">План на текущий квартал:</span>
+                    <span class="data-value">${additionalData.currentQuarter || 0}</span>
+                </div>
+            `;
+        }
+
+        for (const [key, value] of Object.entries(data)) {
+            if (!value && value !== 0) continue;
+
+            if (key.includes('reason')) {
+                if (!value) continue;
+
+                items += `
+                    <div class="data-item reason-item">
+                        <span class="data-label">${getFieldLabel(key)}:</span>
+                        <div class="data-value reason-text">${value}</div>
+                    </div>
+                `;
+            } else {
+                items += `
+                    <div class="data-item">
+                        <span class="data-label">${getFieldLabel(key)}:</span>
+                        <span class="data-value">${value}</span>
+                    </div>
+                `;
+            }
+        }
+
+        return `
+            <div class="data-group">
+                <div class="data-group-title ${categoryClass}">${title}</div>
+                ${items}
+            </div>
+        `;
+    }
+
+    function renderDataGroup(title, value) {
+        if (!value) return '';
+
+        const categoryClass = getCategoryClass(title);
+
+        return `
+            <div class="data-group">
+                <div class="data-group-title ${categoryClass}">${title}</div>
+                <div class="data-item">
+                    <div class="data-value">${value}</div>
+                </div>
+            </div>
+        `;
+    }
+
+    function getCategoryClass(title) {
+        const categoryMap = {
+            'АПК I уровень': 'apk',
+            'АПК II уровень': 'apk',
+            'Утечки газа': 'leak',
+            'Подготовка к ОЗП': 'ozp',
+            'Замечания Газнадзора': 'gaz',
+            'Замечания Ростехнадзора': 'ros',
+            'Рационализаторские предложения': 'rp',
+            'ПАТ': 'pat',
+            'Техническая учёба': 'tu',
+            'Кольцевые сварные соединения': 'kss special',
+            'Задания на день': 'tasks',
+            'Замечания по оборудованию': 'faults'
+        };
+
+        return categoryMap[title] || '';
+    }
+
+    function getFieldLabel(fieldName) {
+        const labels = {
+            'tasks': 'Задания на день',
+            'faults': 'Замечания по оборудованию',
+            'apk_total': 'Всего замечаний',
+            'apk_done': 'Устранено',
+            'apk_undone': 'Не устранено',
+            'apk_reason_undone': 'Причина неустранения',
+            'apk2_total': 'Всего замечаний',
+            'apk2_done': 'Устранено',
+            'apk2_undone': 'Не устранено',
+            'apk2_reason_undone': 'Причина неустранения',
+            'leak_total': 'Обнаружено утечек',
+            'leak_done': 'Устранено утечек',
+            'ozp_done': 'Устранено',
+            'ozp_undone': 'Не устранено',
+            'ozp_reason_undone': 'Причина неустранения',
+            'gaz_done': 'Устранено',
+            'gaz_undone': 'Не устранено',
+            'gaz_reason_undone': 'Причина неустранения',
+            'ros_done': 'Устранено',
+            'ros_undone': 'Не устранено',
+            'ros_reason_undone': 'Причина неустранения',
+            'rp_done': 'Подано',
+            'rp_inwork': 'В работе',
+            'pat_done': 'Проведено',
+            'tu_done': 'Проведено',
+            'kss_done': 'Выполнено'
+        };
+
+        return labels[fieldName] || fieldName;
     }
 });
