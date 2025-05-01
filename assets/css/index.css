@@ -646,3 +646,15 @@
     border-radius: var(--radius-sm);
     margin: 1rem 0;
 }
+
+
+.error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: none;
+}
+
+input:invalid, select:invalid {
+    border-color: #dc3545;
+}

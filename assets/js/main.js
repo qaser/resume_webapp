@@ -136,7 +136,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Инициализация формы ввода данных (изменена для использования api)
     function initDataInputForm() {
         const reportForm = document.getElementById("reportForm");
         const dynamicFields = document.getElementById("dynamicFields");
@@ -371,17 +370,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Функция для отображения формы планирования (изменена для использования api.savePlan)
     async function renderPlanningForm() {
         const currentYear = new Date().getFullYear();
         const years = [currentYear, currentYear + 1, currentYear + 2];
 
-        // Загружаем шаблон и передаем данные для динамических полей
         appContainer.innerHTML = await loadTemplate('planning-form', {
             yearOptions: years.map(year => `<option value="${year}">${year}</option>`).join('')
         });
 
-        // Обработчик отправки формы планирования (использует api.savePlan)
         document.getElementById('planningForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -403,10 +399,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 if (result.status === 'success') {
                     showNotification('✓ Данные планирования сохранены', 'success');
-                    setTimeout(() => {
-                        dataInputBtn.click();
-                        renderDataInputForm();
-                    }, 500);
+                    this.reset();
+                    dataInputBtn.click(); // Переход на начальный экран
+                    renderDataInputForm(); // Перерисовка начальной формы
                 } else {
                     throw new Error(result.message || 'Ошибка сохранения данных планирования');
                 }
