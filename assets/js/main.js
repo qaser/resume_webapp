@@ -271,13 +271,28 @@ document.addEventListener('DOMContentLoaded', function() {
             const isLES = currentDepartment === 'ЛЭС';
 
             // Используем API методы для загрузки данных
-            const [plans, leaks, remarks, kss] = await Promise.all([
-                api.getPlans(currentDepartment, currentYear).catch(e => ({ status: 'error', data: null })),
-                api.getLeaks(currentDepartment, currentYear).catch(e => ({ status: 'error', data: null })),
-                api.getRemarks(currentDepartment, currentYear).catch(e => ({ status: 'error', data: null })),
-                isLES ? api.getKss(currentYear).catch(e => ({ status: 'error', data: null })) :
-                       Promise.resolve({ status: 'success', data: { total: 0 } })
+            const [plansResponse, leaksResponse, remarksResponse, kssResponse] = await Promise.all([
+                api.getPlans(currentDepartment, currentYear),
+                api.getLeaks(currentDepartment, currentYear),
+                api.getRemarks(currentDepartment, currentYear),
+                isLES ? api.getKss(currentYear) : Promise.resolve(null)
             ]);
+
+            // Обрабатываем ответы
+            const plans = plansResponse.status === 'success' ? plansResponse.data : null;
+            const leaks = leaksResponse.status === 'success' ? leaksResponse.data : null;
+            const remarks = remarksResponse.status === 'success' ? remarksResponse.remarks : null; // Обратите внимание на remarksResponse.remarks
+            const kss = kssResponse && kssResponse.status === 'success' ? kssResponse.data : null;
+
+            const getRemarkData = (type) => {
+                if (!remarks) return null;
+                return remarks.find(r => r.value === type) || null; // Ищем в массиве remarks
+            };
+
+            const getPlanData = (type) => {
+                if (!plans?.plans) return null;
+                return plans.plans.find(p => p.value === type) || null;
+            };
 
             let html = '';
 
@@ -285,16 +300,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 const date = new Date(report.datetime).toLocaleString();
                 const type = report.type === 'daily' ? 'Ежедневный отчёт' : 'Еженедельный отчёт';
                 const data = report.data;
-
-                const getRemarkData = (type) => {
-                    if (!remarks.data?.remarks) return null;
-                    return remarks.data.remarks.find(r => r.value === type) || null;
-                };
-
-                const getPlanData = (type) => {
-                    if (!plans.data?.plans) return null;
-                    return plans.data.plans.find(p => p.value === type) || null;
-                };
 
                 html += `
                     <div class="data-section">
@@ -309,24 +314,27 @@ document.addEventListener('DOMContentLoaded', function() {
                         ${data.apk2 ? renderCategory('АПК II уровень', data.apk2) : ''}
 
                         ${data.leak ? renderCategory('Утечки газа', data.leak, {
-                            total: leaks.data?.total || 0,
-                            done: leaks.data?.done || 0
+                            total: leaks?.total || 0,
+                            done: leaks?.done || 0
                         }) : ''}
 
-                        ${data.ozp ? renderCategory('АПК IV уровень', data.apk4, {
+                        ${data.apk4 ? renderCategory('АПК IV уровень', data.apk4, {
                             total: getRemarkData('apk4')?.total || 0
                         }) : ''}
 
                         ${data.ozp ? renderCategory('Подготовка к ОЗП', data.ozp, {
-                            total: getRemarkData('ozp')?.total || 0
+                            total: getRemarkData('ozp')?.total || 0,
+                            done: getRemarkData('ozp')?.done || 0
                         }) : ''}
 
                         ${data.gaz ? renderCategory('Замечания Газнадзора', data.gaz, {
-                            total: getRemarkData('gaz')?.total || 0
+                            total: getRemarkData('gaz')?.total || 0,
+                            done: getRemarkData('gaz')?.done || 0
                         }) : ''}
 
                         ${data.ros ? renderCategory('Замечания Ростехнадзора', data.ros, {
-                            total: getRemarkData('ros')?.total || 0
+                            total: getRemarkData('ros')?.total || 0,
+                            done: getRemarkData('ros')?.done || 0
                         }) : ''}
 
                         ${data.rp ? renderCategory('Рационализаторские предложения', data.rp, {
@@ -345,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }) : ''}
 
                         ${(data.kss && isLES) ? renderCategory('Кольцевые сварные соединения', data.kss, {
-                            total: kss.data?.total || 0
+                            total: kss?.total || 0
                         }) : ''}
                     </div>
                 `;
