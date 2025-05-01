@@ -282,7 +282,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const plans = plansResponse.status === 'success' ? plansResponse.plans : null;
             const leaks = leaksResponse.status === 'success' ? leaksResponse.leaks : null;
             const remarks = remarksResponse.status === 'success' ? remarksResponse.remarks : null; // Обратите внимание на remarksResponse.remarks
-            const kss = kssResponse && kssResponse.status === 'success' ? kssResponse.kss : null;
+            const kssTotal = kssResponse && kssResponse.status === 'success' ? kssResponse.total : 0;
 
             const getRemarkData = (type) => {
                 if (!remarks) return null;
@@ -290,8 +290,8 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             const getPlanData = (type) => {
-                if (!plans?.plans) return null;
-                return plans.plans.find(p => p.value === type) || null;
+                if (!plans) return null; // Теперь работаем напрямую с plans, а не plans.plans
+                return plans.find(p => p.value === type) || null;
             };
 
             let html = '';
@@ -353,7 +353,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }) : ''}
 
                         ${(data.kss && isLES) ? renderCategory('Кольцевые сварные соединения', data.kss, {
-                            total: kss?.total || 0
+                            total: kssTotal  // Используем исправленное значение
                         }) : ''}
                     </div>
                 `;
