@@ -1,0 +1,36 @@
+<div class="form-container">
+    <h2>Ввод данных</h2>
+    <div class="form-group">
+        <label for="serviceSelect">Служба</label>
+        <select id="serviceSelect" required>
+            <option value="">-- Выберите --</option>
+            <option value="КС-1,4">КС-1,4</option>
+            <option value="КС-2,3">КС-2,3</option>
+            <option value="КС-5,6">КС-5,6</option>
+            <option value="КС-7,8">КС-7,8</option>
+            <option value="КС-9,10">КС-9,10</option>
+            <option value="АиМО">АиМО</option>
+            <option value="ЭВС">ЭВС</option>
+            <option value="ЛЭС">ЛЭС</option>
+            <option value="СЗК">СЗК</option>
+            <option value="Связь">Связь</option>
+            <option value="ВПО">ВПО</option>
+        </select>
+        <div class="error-message" id="serviceError" style="display: none;">Пожалуйста, выберите службу</div>
+    </div>
+
+    <div class="form-group">
+        <label>Тип отчета</label>
+        <div class="button-group" id="typeButtons">
+            <button type="button" class="type-button" data-type="daily">Ежедневный</button>
+            <button type="button" class="type-button" data-type="weekly">Еженедельный</button>
+        </div>
+        <div class="error-message" id="typeError" style="display: none;">Пожалуйста, выберите тип отчета</div>
+    </div>
+
+    <form id="reportForm" style="display:none;">
+        <div id="dynamicFields"></div>
+        <div id="formErrors" class="error-message" style="display: none;"></div>
+        <button type="submit" class="submit-button">Отправить</button>
+    </form>
+</div>
