@@ -173,32 +173,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // async function renderFields(type) {
-        //     try {
-        //         const response = await fetch(`${basePath}${type}.html`);
-        //         if (!response.ok) throw new Error('Network response was not ok');
-
-        //         dynamicFields.innerHTML = await response.text();
-
-        //         const allInputs = dynamicFields.querySelectorAll("input[type='number']");
-        //         allInputs.forEach(input => {
-        //             if (input.name.includes("undone")) {
-        //                 input.addEventListener("input", () => {
-        //                     const container = input.closest(".form-group-section");
-        //                     const reasonField = container.querySelector(".reason-field");
-        //                     if (!reasonField) return;
-
-        //                     const val = parseInt(input.value.trim());
-        //                     reasonField.style.display = val > 0 ? "block" : "none";
-        //                 });
-        //             }
-        //         });
-        //     } catch (error) {
-        //         console.error('Error loading HTML:', error);
-        //         dynamicFields.innerHTML = `<p>Error loading form: ${error.message}</p>`;
-        //     }
-        // }
-
         // Отправка формы (изменена для использования api.submitReport)
         reportForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -339,6 +313,10 @@ document.addEventListener('DOMContentLoaded', function() {
                             done: leaks.data?.done || 0
                         }) : ''}
 
+                        ${data.ozp ? renderCategory('АПК IV уровень', data.apk4, {
+                            total: getRemarkData('apk4')?.total || 0
+                        }) : ''}
+
                         ${data.ozp ? renderCategory('Подготовка к ОЗП', data.ozp, {
                             total: getRemarkData('ozp')?.total || 0
                         }) : ''}
@@ -444,7 +422,7 @@ document.addEventListener('DOMContentLoaded', function() {
             if (['Рационализаторские предложения', 'ПАТ', 'Техническая учёба'].includes(title)) {
                 label = 'План на текущий год';
             }
-            else if (['Подготовка к ОЗП', 'Замечания Газнадзора', 'Замечания Ростехнадзора'].includes(title)) {
+            else if (['Подготовка к ОЗП', 'Замечания Газнадзора', 'Замечания Ростехнадзора', 'АПК IV уровень (комиссия ОЗП)'].includes(title)) {
                 label = 'Всего замечаний';
             }
             else if (title === 'Кольцевые сварные соединения') {
@@ -522,6 +500,7 @@ document.addEventListener('DOMContentLoaded', function() {
             'АПК II уровень': 'apk',
             'Утечки газа': 'leak',
             'Подготовка к ОЗП': 'ozp',
+            'АПК IV уровень': 'apk',
             'Замечания Газнадзора': 'gaz',
             'Замечания Ростехнадзора': 'ros',
             'Рационализаторские предложения': 'rp',
@@ -549,6 +528,9 @@ document.addEventListener('DOMContentLoaded', function() {
             'apk2_reason_undone': 'Причина неустранения',
             'leak_total': 'Обнаружено утечек',
             'leak_done': 'Устранено утечек',
+            'apk4_done': 'Устранено',
+            'apk4_undone': 'Не устранено',
+            'apk4_reason_undone': 'Причина неустранения',
             'ozp_done': 'Устранено',
             'ozp_undone': 'Не устранено',
             'ozp_reason_undone': 'Причина неустранения',

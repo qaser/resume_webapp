@@ -26,6 +26,9 @@ FIELD_NAMES_MAPPING = {
     'leak_done': 'Устранено утечек',
 
     # Замечания
+    'apk4_done': 'Устранено замечаний АПК IV уровня',
+    'apk4_undone': 'Не устранено замечаний АПК IV уровня',
+    'apk4_reason_undone': 'Причина неустранения АПК IV уровня',
     'ozp_done': 'Устранено замечаний ОЗП',
     'ozp_undone': 'Не устранено замечаний ОЗП',
     'ozp_reason_undone': 'Причина неустранения ОЗП',
@@ -72,6 +75,7 @@ def handle_report(request):
                 'apk': ['apk_total', 'apk_done', 'apk_undone', 'apk_reason_undone'],
                 'apk2': ['apk2_total', 'apk2_done', 'apk2_undone', 'apk2_reason_undone'],
                 'leak': ['leak_total', 'leak_done'],
+                'apk4': ['apk4_done', 'apk4_undone', 'apk4_reason_undone'],
                 'ozp': ['ozp_done', 'ozp_undone', 'ozp_reason_undone'],
                 'gaz': ['gaz_done', 'gaz_undone', 'gaz_reason_undone'],
                 'ros': ['ros_done', 'ros_undone', 'ros_reason_undone'],
@@ -183,7 +187,7 @@ def update_related_collections(report_data, year):
             )
 
     # Обработка замечаний (ОЗП, Газнадзор, Ростехнадзор)
-    for remark_type in ['ozp', 'gaz', 'ros']:
+    for remark_type in ['ozp', 'gaz', 'ros', 'apk4']:
         if remark_type in report_data['data']:
             remark_done = report_data['data'][remark_type].get(f'{remark_type}_done', 0)
             if remark_done > 0:
@@ -215,7 +219,7 @@ def handle_planning(request):
             now = datetime.now()
 
             # Обработка замечаний (ОЗП, Газнадзор, Ростехнадзор)
-            for remark_type in ['ozp', 'gaz', 'ros']:
+            for remark_type in ['ozp', 'gaz', 'ros', 'apk4']:
                 total = data.get(f'{remark_type}_total', 0)
                 if total:
                     remark_data = {
