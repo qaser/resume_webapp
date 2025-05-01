@@ -398,20 +398,33 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await api.savePlan(data);
 
                 if (result.status === 'success') {
-                    showNotification('✓ Данные планирования сохранены', 'success');
-                    this.reset();
-                    dataInputBtn.click(); // Переход на начальный экран
-                    renderDataInputForm(); // Перерисовка начальной формы
+                    showNotification('✓ Данные успешно сохранены', 'success');
+                    setTimeout(() => {
+                        dataInputBtn.click();
+                        renderDataInputForm();
+                    }, 500);
                 } else {
-                    throw new Error(result.message || 'Ошибка сохранения данных планирования');
+                    throw new Error(result.message || 'Ошибка сохранения данных');
                 }
             } catch (error) {
                 console.error('Ошибка:', error);
-                showNotification(error.message || 'Ошибка при сохранении данных планирования', 'error');
+                showNotification(error.message || 'Ошибка при сохранении данных', 'error');
             } finally {
                 submitBtn.classList.remove('loading');
             }
         });
+
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}-notification`;
+            notification.innerHTML = message;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => notification.remove(), 300);
+            }, 3000);
+        }
     }
 
     // Вспомогательные функции (остаются без изменений)
