@@ -279,10 +279,10 @@ document.addEventListener('DOMContentLoaded', function() {
             ]);
 
             // Обрабатываем ответы
-            const plans = plansResponse.status === 'success' ? plansResponse.data : null;
-            const leaks = leaksResponse.status === 'success' ? leaksResponse.data : null;
+            const plans = plansResponse.status === 'success' ? plansResponse.plans : null;
+            const leaks = leaksResponse.status === 'success' ? leaksResponse.leaks : null;
             const remarks = remarksResponse.status === 'success' ? remarksResponse.remarks : null; // Обратите внимание на remarksResponse.remarks
-            const kss = kssResponse && kssResponse.status === 'success' ? kssResponse.data : null;
+            const kss = kssResponse && kssResponse.status === 'success' ? kssResponse.kss : null;
 
             const getRemarkData = (type) => {
                 if (!remarks) return null;
