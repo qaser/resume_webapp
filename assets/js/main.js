@@ -251,18 +251,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.classList.remove('loading');
             }
         });
-
-        // function showNotification(message, type = 'success') {
-        //     const notification = document.createElement('div');
-        //     notification.className = `notification ${type}-notification`;
-        //     notification.innerHTML = message;
-        //     document.body.appendChild(notification);
-
-        //     setTimeout(() => {
-        //         notification.style.opacity = '0';
-        //         setTimeout(() => notification.remove(), 300);
-        //     }, 3000);
-        // }
     }
 
     async function loadServiceData(service) {
@@ -321,7 +309,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // Обрабатываем ответы
             const plans = plansResponse.status === 'success' ? plansResponse.plans : null;
             const leaks = leaksResponse.status === 'success' ? leaksResponse.leaks : null;
-            const remarks = remarksResponse.status === 'success' ? remarksResponse.remarks : null; // Обратите внимание на remarksResponse.remarks
+            const remarks = remarksResponse.status === 'success' ? remarksResponse.remarks : null;
             const kssTotal = kssResponse && kssResponse.status === 'success' ? kssResponse.total : 0;
 
             const getRemarkData = (type) => {
@@ -330,7 +318,7 @@ document.addEventListener('DOMContentLoaded', function() {
             };
 
             const getPlanData = (type) => {
-                if (!plans) return null; // Теперь работаем напрямую с plans, а не plans.plans
+                if (!plans) return null;
                 return plans.find(p => p.value === type) || null;
             };
 
@@ -393,7 +381,7 @@ document.addEventListener('DOMContentLoaded', function() {
                         }) : ''}
 
                         ${(data.kss && isLES) ? renderCategory('Кольцевые сварные соединения', data.kss, {
-                            total: kssTotal  // Используем исправленное значение
+                            total: kssTotal
                         }) : ''}
                     </div>
                 `;
