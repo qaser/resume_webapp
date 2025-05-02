@@ -690,3 +690,40 @@ input:invalid, select:invalid {
 .archive-btn:hover {
     background: rgba(239, 68, 68, 0.2);
 }
+
+/* Стили для протоколов в форме */
+.form-group-protocol::before {
+    background: #7c3aed; /* Фиолетовый */
+}
+
+.protocol-checkbox {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 12px;
+    padding: 12px;
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+}
+
+.protocol-info {
+    flex-grow: 1;
+}
+
+.protocol-date {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.protocol-text {
+    color: var(--hint);
+    font-size: 0.9rem;
+}
+
+.protocol-checkbox input[type="checkbox"] {
+    margin-left: 12px;
+    width: 20px;
+    height: 20px;
+    accent-color: var(--accent);
+}

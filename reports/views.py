@@ -58,10 +58,11 @@ def handle_report(request):
         try:
             data = json.loads(request.body)
             current_year = datetime.now().year
+            service = data.get('service')
 
             # Подготовка данных для сохранения
             report_data = {
-                'department': data.get('service'),
+                'department': service,
                 'type': data.get('type'),
                 'datetime': datetime.now(),
                 'data': {}
@@ -118,9 +119,23 @@ def handle_report(request):
             # Обновляем дополнительные коллекции
             update_related_collections(report_data, current_year)
 
+            protocol_updates = {}
+            for key, value in data.items():
+                if key.startswith('protocol_') and value == 'on':
+                    protocol_id = key.replace('protocol_', '')
+                    protocol_updates[protocol_id] = datetime.now().isoformat()
+
+            if protocol_updates:
+                for protocol_id, done_date in protocol_updates.items():
+                    protocols.update_one(
+                        {'_id': ObjectId(protocol_id)},
+                        {'$set': {f'done.{service}': done_date}}
+                    )
+
             return JsonResponse({'status': 'success', 'message': 'Данные успешно сохранены'})
         except Exception as e:
             return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': str(e)}))
+
     elif request.method == 'GET':
         try:
             service = request.GET.get('service')
@@ -442,6 +457,29 @@ def archive_protocol(request, protocol_id):
 
             if result.modified_count == 1:
                 return JsonResponse({'status': 'success', 'message': 'Протокол архивирован'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Протокол не найден'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+    return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
+
+
+@csrf_exempt
+def mark_protocol_done(request, protocol_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            service = data.get('service')
+            done_date = datetime.fromisoformat(data.get('done_date'))
+
+            result = protocols.update_one(
+                {'_id': ObjectId(protocol_id)},
+                {'$set': {f'done.{service}': done_date}}
+            )
+
+            if result.modified_count == 1:
+                return JsonResponse({'status': 'success', 'message': 'Протокол обновлен'})
             else:
                 return JsonResponse({'status': 'error', 'message': 'Протокол не найден'}, status=404)
         except Exception as e:

@@ -86,6 +86,18 @@ const api = {
             }
         });
         return await response.json();
+    },
+
+    async updateProtocol(protocolId, service, doneDate) {
+        const response = await fetch(`/api/protocols/${protocolId}/done/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ service, done_date: doneDate })
+        });
+        return await response.json();
     }
 };
 
