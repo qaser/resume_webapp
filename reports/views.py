@@ -123,7 +123,7 @@ def handle_report(request):
             for key, value in data.items():
                 if key.startswith('protocol_') and value == 'on':
                     protocol_id = key.replace('protocol_', '')
-                    protocol_updates[protocol_id] = datetime.now().isoformat()
+                    protocol_updates[protocol_id] = datetime.now()
 
             if protocol_updates:
                 for protocol_id, done_date in protocol_updates.items():

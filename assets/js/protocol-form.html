@@ -1,0 +1,22 @@
+<div class="form-container">
+    <h2>Протоколы совещаний</h2>
+
+    <form id="protocolForm">
+        <div class="form-group">
+            <label for="protocolDate">Дата исполнения</label>
+            <input type="date" id="protocolDate" name="date" required>
+        </div>
+
+        <div class="form-group">
+            <label for="protocolText">Наименование мероприятий</label>
+            <textarea id="protocolText" name="text" required></textarea>
+        </div>
+
+        <button type="submit" class="submit-button">Добавить</button>
+    </form>
+
+    <div id="protocolsList" class="protocols-list">
+        <h3>Список протоколов</h3>
+        <div class="loading">Загрузка данных...</div>
+    </div>
+</div>

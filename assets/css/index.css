@@ -484,38 +484,43 @@
   .data-group-title.tasks { background-color: #f3f4f6; } /* Ещё светлее серый */
 
 
-  .data-group .data-value {
+.data-group .data-value {
     white-space: pre-line; /* Сохраняет переносы строк */
     line-height: 1.5;
     padding: 8px 0;
 }
 
-    .data-group .data-item {
-        border-bottom: none;
-        padding: 0;
-    }
-
-
-  .data-item {
+.data-item {
     display: flex;
     justify-content: space-between;
+    align-items: center; /* Добавлено для вертикального выравнивания */
     padding: 8px 0;
     border-bottom: 1px dashed var(--border);
-  }
+    min-height: 32px; /* Добавлено для единообразия высоты */
+}
 
-  .data-item:last-child {
+.data-item:last-child {
     border-bottom: none;
-  }
+}
 
-  .data-label {
+.data-label {
     font-weight: 500;
     color: var(--hint);
-  }
+    padding-right: 10px; /* Добавлено для отступа между label и value */
+}
 
-  .data-value {
+.data-value {
     font-weight: 600;
     color: var(--text);
-  }
+    text-align: right; /* Выравнивание текста значения по правому краю */
+    flex-shrink: 0; /* Запрет уменьшения ширины */
+}
+
+/* Для случаев, когда нужно убрать отступы в группе */
+.data-group .data-item {
+    border-bottom: none;
+    padding: 0;
+}
 
   .data-header {
     display: flex;

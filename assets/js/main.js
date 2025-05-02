@@ -202,6 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const type = button.dataset.type;
                 try {
                     dynamicFields.innerHTML = await loadTemplate(type);
+                    if (type === 'weekly') {loadProtocolsForReport()}
                     reportForm.style.display = "block";
 
                     // Инициализация обработчиков для полей ввода
@@ -265,12 +266,50 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+    async function loadProtocolsForReport() {
+        const container = document.getElementById('protocolsContainer');
+        console.log(container)
+        container.innerHTML = '<div class="loading">Загрузка мероприятий...</div>';
+
+        try {
+            const response = await api.getProtocols();
+            if (response.status === 'success' && response.protocols.length > 0) {
+                let html = '';
+                response.protocols.forEach(protocol => {
+                    if (!protocol.archived) {
+                        const protocolDate = new Date(protocol.date).toLocaleDateString();
+                        const isChecked = protocol.done && protocol.done[document.getElementById('serviceSelect').value];
+
+                        html += `
+                            <div class="protocol-checkbox">
+                                <div class="protocol-info">
+                                    <div class="protocol-date">${protocolDate}</div>
+                                    <div class="protocol-text">${protocol.text}</div>
+                                </div>
+                                <input type="checkbox"
+                                       name="protocol_${protocol._id}"
+                                       ${isChecked ? 'checked' : ''}
+                                       data-id="${protocol._id}">
+                            </div>
+                        `;
+                    }
+                });
+
+                container.innerHTML = html || '<div class="no-data">Нет активных мероприятий</div>';
+            } else {
+                container.innerHTML = '<div class="no-data">Нет активных мероприятий</div>';
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки протоколов:', error);
+            container.innerHTML = '<div class="error">Ошибка загрузки мероприятий</div>';
+        }
+    }
+
     async function loadServiceData(service) {
         const dataDisplay = document.getElementById("dataDisplay");
         dataDisplay.innerHTML = '<div class="loading">Загрузка данных...</div>';
 
         try {
-            // Используем api.getReports вместо прямого fetch
             const data = await api.getReports(service);
 
             if (data.status === 'success') {
@@ -585,6 +624,7 @@ document.addEventListener('DOMContentLoaded', function() {
             setTimeout(() => notification.remove(), 300);
         }, 3000);
     }
+
 
     function renderCategory(title, data, additionalData = {}) {
         let items = '';
