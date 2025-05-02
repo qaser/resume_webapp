@@ -3,7 +3,7 @@ from datetime import datetime
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
-from report_webapp.utils import reports, plans, kss, remarks, leaks
+from report_webapp.utils import reports, plans, kss, remarks, leaks, protocols
 
 # Словарь для преобразования технических имен в читаемые
 FIELD_NAMES_MAPPING = {
@@ -383,3 +383,66 @@ def get_plans(request):
             'message': str(e),
             'plans': []
         }, status=500)
+
+
+# Добавим новые обработчики
+@csrf_exempt
+def handle_protocols(request):
+    if request.method == 'GET':
+        try:
+            # Получаем только неархивированные протоколы
+            queryset = list(protocols.find(
+                {'archived': {'$ne': True}},
+                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1}
+            ).sort('date', -1))
+
+            # Преобразуем ObjectId в строку
+            for protocol in queryset:
+                protocol['_id'] = str(protocol['_id'])
+                protocol['date'] = protocol['date'].isoformat()
+
+            return JsonResponse({
+                'status': 'success',
+                'protocols': queryset
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            protocol_data = {
+                'date': datetime.fromisoformat(data['date']),
+                'text': data['text'],
+                'archived': False,
+                'created_at': datetime.now()
+            }
+
+            result = protocols.insert_one(protocol_data)
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Протокол успешно добавлен',
+                'id': str(result.inserted_id)
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+    return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
+
+@csrf_exempt
+def archive_protocol(request, protocol_id):
+    if request.method == 'POST':
+        try:
+            result = protocols.update_one(
+                {'_id': ObjectId(protocol_id)},
+                {'$set': {'archived': True, 'archived_at': datetime.now()}}
+            )
+
+            if result.modified_count == 1:
+                return JsonResponse({'status': 'success', 'message': 'Протокол архивирован'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Протокол не найден'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+    return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))

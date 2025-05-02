@@ -11,4 +11,6 @@ urlpatterns = [
     path('api/leaks/', views.get_leaks, name='get_leaks'),
     path('api/kss/', views.get_kss, name='get_kss'),
     path('api/remarks/', views.get_remarks, name='get_remarks'),
+    path('api/protocols/', views.handle_protocols, name='protocols'),
+    path('api/protocols/<str:protocol_id>/archive/', views.archive_protocol, name='archive_protocol'),
 ]

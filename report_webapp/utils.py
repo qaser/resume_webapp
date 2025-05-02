@@ -8,8 +8,19 @@ plans = db['plans']
 kss = db['kss']
 remarks = db['remarks']
 leaks = db['leaks']
+protocols = db['protocols']
+
 
 '''
+структура данных protocol:
+{
+    '_id': порядковый номер,
+    'date': требуемая дата исполнения,
+    'text': текст мероприятия,
+    'done': {'КС-1,4': дата_выполнения},
+    'archived': True/False
+}
+
 структура данных remarks:
 {
     '_id': порядковый номер,

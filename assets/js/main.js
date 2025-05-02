@@ -57,6 +57,35 @@ const api = {
             body: JSON.stringify(data)
         });
         return await response.json();
+    },
+
+    async getProtocols() {
+        const response = await fetch('/api/protocols/');
+        return await response.json();
+    },
+
+    // Добавление протокола
+    async addProtocol(data) {
+        const response = await fetch('/api/protocols/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    },
+
+    // Архивирование протокола
+    async archiveProtocol(id) {
+        const response = await fetch(`/api/protocols/${id}/archive/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            }
+        });
+        return await response.json();
     }
 };
 

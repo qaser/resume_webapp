@@ -658,3 +658,49 @@
 input:invalid, select:invalid {
     border-color: #dc3545;
 }
+
+
+/* Стили для протоколов */
+.protocols-list {
+    margin-top: 30px;
+}
+
+.protocol-item {
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    position: relative;
+}
+
+.protocol-date {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.protocol-text {
+    white-space: pre-line;
+    margin-bottom: 12px;
+}
+
+.protocol-actions {
+    display: flex;
+    justify-content: flex-end;
+}
+
+.archive-btn {
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.archive-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
