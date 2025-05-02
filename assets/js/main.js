@@ -240,6 +240,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     csrfmiddlewaretoken: csrfToken
                 };
 
+                // Собираем данные протоколов
+                const protocolElements = document.querySelectorAll('.protocol-action-btn');
+                protocolElements.forEach(btn => {
+                    const protocolId = btn.dataset.id;
+                    data[`protocol_${protocolId}`] = btn.classList.contains('done') ? 'on' : 'off';
+                });
+
                 formData.forEach((value, key) => {
                     data[key] = value;
                 });
@@ -266,36 +273,65 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
+
     async function loadProtocolsForReport() {
         const container = document.getElementById('protocolsContainer');
-        console.log(container)
         container.innerHTML = '<div class="loading">Загрузка мероприятий...</div>';
 
         try {
             const response = await api.getProtocols();
             if (response.status === 'success' && response.protocols.length > 0) {
                 let html = '';
+                const currentService = document.getElementById('serviceSelect').value;
+
                 response.protocols.forEach(protocol => {
                     if (!protocol.archived) {
                         const protocolDate = new Date(protocol.date).toLocaleDateString();
-                        const isChecked = protocol.done && protocol.done[document.getElementById('serviceSelect').value];
+                        const isChecked = protocol.done && protocol.done[currentService];
 
                         html += `
-                            <div class="protocol-checkbox">
+                            <div class="protocol-item">
                                 <div class="protocol-info">
                                     <div class="protocol-date">${protocolDate}</div>
                                     <div class="protocol-text">${protocol.text}</div>
                                 </div>
-                                <input type="checkbox"
-                                       name="protocol_${protocol._id}"
-                                       ${isChecked ? 'checked' : ''}
-                                       data-id="${protocol._id}">
+                                <button class="protocol-action-btn ${isChecked ? 'done' : ''}"
+                                        data-id="${protocol._id}"
+                                        type="button">
+                                    ${isChecked ? '✓ Выполнено' : 'Не выполнено'}
+                                </button>
                             </div>
                         `;
                     }
                 });
 
                 container.innerHTML = html || '<div class="no-data">Нет активных мероприятий</div>';
+
+                // Добавляем обработчики для кнопок
+                container.querySelectorAll('.protocol-action-btn').forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const protocolId = this.dataset.id;
+                        const isDone = this.classList.contains('done');
+
+                        // Инвертируем состояние
+                        this.classList.toggle('done');
+                        this.textContent = isDone ? 'Не выполнено' : '✓ Выполнено';
+
+                        // Сохраняем в скрытое поле формы для отправки
+                        const checkbox = document.querySelector(`input[name="protocol_${protocolId}"]`);
+                        if (checkbox) {
+                            checkbox.checked = !isDone;
+                        } else {
+                            // Создаём скрытое поле, если его нет
+                            const form = document.getElementById('reportForm');
+                            const hiddenInput = document.createElement('input');
+                            hiddenInput.type = 'hidden';
+                            hiddenInput.name = `protocol_${protocolId}`;
+                            hiddenInput.value = !isDone ? 'on' : 'off';
+                            form.appendChild(hiddenInput);
+                        }
+                    });
+                });
             } else {
                 container.innerHTML = '<div class="no-data">Нет активных мероприятий</div>';
             }
@@ -552,10 +588,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         let html = '';
                         result.protocols.forEach(protocol => {
                             if (!protocol.archived) {
+                                // Формируем список выполненных служб
+                                let completedByHtml = '<div class="protocol-completed">Не выполнено</div>';
+                                if (protocol.done && Object.keys(protocol.done).length > 0) {
+                                    completedByHtml = `
+                                        <div class="protocol-completed">
+                                            <div class="completed-label">Выполнено:</div>
+                                            <div class="completed-list">
+                                                ${Object.entries(protocol.done)
+                                                    .map(([dept, date]) => {
+                                                        const formattedDate = new Date(date).toLocaleDateString();
+                                                        return `<div class="completed-item">${dept} (${formattedDate})</div>`;
+                                                    })
+                                                    .join('')}
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+
                                 html += `
                                     <div class="protocol-item" data-id="${protocol._id}">
-                                        <div class="protocol-date">${new Date(protocol.date).toLocaleDateString()}</div>
-                                        <div class="protocol-text">${protocol.text}</div>
+                                        <div class="protocol-info">
+                                            <div class="protocol-date">${new Date(protocol.date).toLocaleDateString()}</div>
+                                            <div class="protocol-text">${protocol.text}</div>
+                                            ${completedByHtml}
+                                        </div>
                                         <div class="protocol-actions">
                                             <button class="archive-btn" data-id="${protocol._id}">Архивировать</button>
                                         </div>
@@ -570,7 +627,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
                         protocolsList.innerHTML = '<h3>Список протоколов</h3>' + html;
 
-                        // Добавляем обработчики для кнопок архивирования
+                        // Обработчики кнопок архивирования остаются без изменений
                         document.querySelectorAll('.archive-btn').forEach(btn => {
                             btn.addEventListener('click', async function() {
                                 const protocolId = this.dataset.id;

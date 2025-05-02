@@ -401,7 +401,6 @@ def get_plans(request):
         }, status=500)
 
 
-# Добавим новые обработчики
 @csrf_exempt
 def handle_protocols(request):
     if request.method == 'GET':
@@ -409,17 +408,33 @@ def handle_protocols(request):
             # Получаем только неархивированные протоколы
             queryset = list(protocols.find(
                 {'archived': {'$ne': True}},
-                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1}
+                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1}
             ).sort('date', -1))
 
-            # Преобразуем ObjectId в строку
+            # Преобразуем ObjectId в строку и форматируем даты
+            formatted_protocols = []
             for protocol in queryset:
-                protocol['_id'] = str(protocol['_id'])
-                protocol['date'] = protocol['date'].isoformat()
+                formatted = {
+                    '_id': str(protocol['_id']),
+                    'date': protocol['date'].isoformat(),
+                    'text': protocol['text'],
+                    'done': {}
+                }
+
+                # Форматируем информацию о выполнении
+                if 'done' in protocol:
+                    for dept, date in protocol['done'].items():
+                        if isinstance(date, datetime):
+                            formatted['done'][dept] = date.isoformat()
+                        else:
+                            # Если дата уже в строковом формате (на всякий случай)
+                            formatted['done'][dept] = date
+
+                formatted_protocols.append(formatted)
 
             return JsonResponse({
                 'status': 'success',
-                'protocols': queryset
+                'protocols': formatted_protocols
             })
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

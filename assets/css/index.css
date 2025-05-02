@@ -701,18 +701,21 @@ input:invalid, select:invalid {
     background: #7c3aed; /* Фиолетовый */
 }
 
-.protocol-checkbox {
+.protocol-item {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: 12px;
     padding: 12px;
     background: var(--card-bg);
     border-radius: var(--radius-sm);
     border: 1px solid var(--border);
+    transition: all 0.2s ease;
 }
 
 .protocol-info {
     flex-grow: 1;
+    margin-right: 12px;
 }
 
 .protocol-date {
@@ -724,11 +727,105 @@ input:invalid, select:invalid {
 .protocol-text {
     color: var(--hint);
     font-size: 0.9rem;
+    white-space: pre-line;
 }
 
-.protocol-checkbox input[type="checkbox"] {
-    margin-left: 12px;
-    width: 20px;
-    height: 20px;
-    accent-color: var(--accent);
+.protocol-action-btn {
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    min-width: 120px;
+    text-align: center;
+}
+
+.protocol-action-btn {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.protocol-action-btn.done {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.protocol-action-btn:hover {
+    transform: translateY(-1px);
+}
+
+.protocol-action-btn:active {
+    transform: translateY(0);
+}
+
+.protocol-completed {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--hint);
+}
+
+.protocol-completed .completed-label {
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.protocol-completed .completed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.protocol-completed .completed-item {
+    padding: 4px 8px;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 4px;
+    color: #10b981;
+    font-size: 0.8rem;
+    display: inline-block;
+    width: fit-content;
+}
+
+/* Стиль для случая, когда протокол не выполнен */
+.protocol-completed:not(:has(.completed-label)) {
+    color: var(--hint);
+    font-style: italic;
+    padding: 4px 0;
+}
+
+
+.protocol-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+}
+
+.protocol-info {
+    flex-grow: 1;
+    margin-right: 16px;
+}
+
+.protocol-date {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.protocol-text {
+    color: var(--text);
+    margin-bottom: 8px;
+    white-space: pre-line;
+}
+
+.protocol-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: flex-start;
 }
