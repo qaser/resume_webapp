@@ -94,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const dataInputBtn = document.getElementById("dataInputBtn");
     const dataViewBtn = document.getElementById("dataViewBtn");
     const dataPlanBtn = document.getElementById("dataPlanBtn");
+    const dataProtocolBtn = document.getElementById("dataProtocolBtn");
 
     // Инициализация приложения
     initApp();
@@ -104,6 +105,7 @@ document.addEventListener('DOMContentLoaded', function() {
             dataInputBtn.classList.add("active");
             dataViewBtn.classList.remove("active");
             dataPlanBtn.classList.remove("active");
+            dataProtocolBtn.classList.remove("active");
             renderDataInputForm();
         });
 
@@ -111,6 +113,7 @@ document.addEventListener('DOMContentLoaded', function() {
             dataViewBtn.classList.add("active");
             dataInputBtn.classList.remove("active");
             dataPlanBtn.classList.remove("active");
+            dataProtocolBtn.classList.remove("active");
             renderDataViewForm();
         });
 
@@ -118,7 +121,16 @@ document.addEventListener('DOMContentLoaded', function() {
             dataPlanBtn.classList.add("active");
             dataInputBtn.classList.remove("active");
             dataViewBtn.classList.remove("active");
+            dataProtocolBtn.classList.remove("active");
             renderPlanningForm();
+        });
+
+        dataProtocolBtn.addEventListener("click", () => {
+            dataProtocolBtn.classList.add("active");
+            dataInputBtn.classList.remove("active");
+            dataViewBtn.classList.remove("active");
+            dataPlanBtn.classList.remove("active");
+            renderProtocolForm();
         });
 
         // По умолчанию показываем форму ввода
@@ -240,17 +252,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}-notification`;
-            notification.innerHTML = message;
-            document.body.appendChild(notification);
+        // function showNotification(message, type = 'success') {
+        //     const notification = document.createElement('div');
+        //     notification.className = `notification ${type}-notification`;
+        //     notification.innerHTML = message;
+        //     document.body.appendChild(notification);
 
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
-        }
+        //     setTimeout(() => {
+        //         notification.style.opacity = '0';
+        //         setTimeout(() => notification.remove(), 300);
+        //     }, 3000);
+        // }
     }
 
     async function loadServiceData(service) {
@@ -442,21 +454,138 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.classList.remove('loading');
             }
         });
+    }
 
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}-notification`;
-            notification.innerHTML = message;
-            document.body.appendChild(notification);
+    // Функция для рендеринга формы протоколов:
+    async function renderProtocolForm() {
+        appContainer.innerHTML = await loadTemplate('protocol-form');
+        initProtocolForm();
+    }
 
-            setTimeout(() => {
-                notification.style.opacity = '0';
-                setTimeout(() => notification.remove(), 300);
-            }, 3000);
+    // Инициализация формы протоколов
+    function initProtocolForm() {
+        const protocolForm = document.getElementById("protocolForm");
+        const protocolsList = document.getElementById("protocolsList");
+
+        // Загрузка списка протоколов
+        loadProtocols();
+
+        // Обработка отправки формы
+        protocolForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.classList.add('loading');
+
+            try {
+                const formData = new FormData(protocolForm);
+                const data = {
+                    date: formData.get('date'),
+                    text: formData.get('text'),
+                    csrfmiddlewaretoken: csrfToken
+                };
+
+                const result = await api.addProtocol(data);
+
+                if (result.status === 'success') {
+                    showNotification('✓ Протокол успешно добавлен', 'success');
+                    protocolForm.reset();
+                    loadProtocols();
+                } else {
+                    throw new Error(result.message || 'Ошибка добавления протокола');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification(error.message || 'Ошибка при добавлении протокола', 'error');
+            } finally {
+                submitBtn.classList.remove('loading');
+            }
+        });
+
+        // Функция загрузки протоколов
+        async function loadProtocols() {
+            protocolsList.innerHTML = '<div class="loading">Загрузка данных...</div>';
+
+            try {
+                const result = await api.getProtocols();
+
+                if (result.status === 'success') {
+                    if (result.protocols && result.protocols.length > 0) {
+                        let html = '';
+                        result.protocols.forEach(protocol => {
+                            if (!protocol.archived) {
+                                html += `
+                                    <div class="protocol-item" data-id="${protocol._id}">
+                                        <div class="protocol-date">${new Date(protocol.date).toLocaleDateString()}</div>
+                                        <div class="protocol-text">${protocol.text}</div>
+                                        <div class="protocol-actions">
+                                            <button class="archive-btn" data-id="${protocol._id}">Архивировать</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        });
+
+                        if (html === '') {
+                            html = '<div class="no-data">Нет активных протоколов</div>';
+                        }
+
+                        protocolsList.innerHTML = '<h3>Список протоколов</h3>' + html;
+
+                        // Добавляем обработчики для кнопок архивирования
+                        document.querySelectorAll('.archive-btn').forEach(btn => {
+                            btn.addEventListener('click', async function() {
+                                const protocolId = this.dataset.id;
+                                const protocolItem = this.closest('.protocol-item');
+
+                                if (confirm('Вы уверены, что хотите архивировать этот протокол?')) {
+                                    try {
+                                        const result = await api.archiveProtocol(protocolId);
+
+                                        if (result.status === 'success') {
+                                            showNotification('✓ Протокол архивирован', 'success');
+                                            protocolItem.remove();
+                                        } else {
+                                            throw new Error(result.message || 'Ошибка архивирования');
+                                        }
+                                    } catch (error) {
+                                        console.error('Ошибка:', error);
+                                        showNotification(error.message || 'Ошибка архивирования', 'error');
+                                    }
+                                }
+                            });
+                        });
+                    } else {
+                        protocolsList.innerHTML = '<h3>Список протоколов</h3><div class="no-data">Нет активных протоколов</div>';
+                    }
+                } else {
+                    throw new Error(result.message || 'Ошибка загрузки протоколов');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки протоколов:', error);
+                protocolsList.innerHTML = `
+                    <div class="error">
+                        Ошибка загрузки протоколов
+                        <div class="error-detail">${error.message}</div>
+                    </div>
+                `;
+            }
         }
     }
 
-    // Вспомогательные функции (остаются без изменений)
+
+    // Вспомогательные функции
+    function showNotification(message, type = 'success') {
+        const notification = document.createElement('div');
+        notification.className = `notification ${type}-notification`;
+        notification.innerHTML = message;
+        document.body.appendChild(notification);
+
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => notification.remove(), 300);
+        }, 3000);
+    }
+
     function renderCategory(title, data, additionalData = {}) {
         let items = '';
         const categoryClass = getCategoryClass(title);

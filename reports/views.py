@@ -1,4 +1,5 @@
 import json
+from bson import ObjectId
 from datetime import datetime
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
@@ -431,6 +432,7 @@ def handle_protocols(request):
 
 @csrf_exempt
 def archive_protocol(request, protocol_id):
+    print(protocols.find_one({'_id': ObjectId(protocol_id)}))
     if request.method == 'POST':
         try:
             result = protocols.update_one(

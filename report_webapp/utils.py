@@ -15,10 +15,12 @@ protocols = db['protocols']
 структура данных protocol:
 {
     '_id': порядковый номер,
+    'created_at': datetime,
     'date': требуемая дата исполнения,
     'text': текст мероприятия,
     'done': {'КС-1,4': дата_выполнения},
     'archived': True/False
+    'archived_at': datetime
 }
 
 структура данных remarks:

@@ -575,35 +575,16 @@
     white-space: pre-line;
 }
 
-.success-notification {
-    position: fixed;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: var(--accent);
-    color: white;
-    padding: 12px 24px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    z-index: 1000;
-    animation: slideIn 0.3s ease-out;
-    transition: opacity 0.3s ease;
-}
-
-@keyframes slideIn {
-    from { bottom: -50px; opacity: 0; }
-    to { bottom: 20px; opacity: 1; }
-}
-
 .notification {
     position: fixed;
-    bottom: 20px;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
     padding: 12px 24px;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
     z-index: 1000;
+    opacity: .75;
     animation: slideIn 0.3s ease-out;
     transition: opacity 0.3s ease;
     color: white;
@@ -612,18 +593,23 @@
 }
 
 .success-notification {
-    background: var(--leak-color); /* Зеленый */
+    background: green; /* Зеленый */
 }
 
 .error-notification {
-    background: var(--ros-color); /* Красный */
+    background: red; /* Красный */
 }
 
 @keyframes slideIn {
-    from { bottom: -50px; opacity: 0; }
-    to { bottom: 20px; opacity: 1; }
+    from {
+        top: -50px;
+        opacity: 0;
+    }
+    to {
+        top: 20px;
+        opacity: 1;
+    }
 }
-
 
 .error {
     background-color: #fee2e2;
