@@ -738,13 +738,16 @@ input:invalid, select:invalid {
     cursor: pointer;
     transition: all 0.2s ease;
     flex-shrink: 0;
-    min-width: 120px;
+    min-width: 160px;
     text-align: center;
-}
-
-.protocol-action-btn {
     background-color: rgba(239, 68, 68, 0.1);
     color: #ef4444;
+    margin-left: 12px;
+}
+
+.protocol-action-btn.done {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
 }
 
 .protocol-action-btn.done {
@@ -776,6 +779,10 @@ input:invalid, select:invalid {
     display: flex;
     flex-direction: column;
     gap: 4px;
+}
+
+.completed-label:contains("✓") {
+    color: #10b981;
 }
 
 .protocol-completed .completed-item {
@@ -828,4 +835,35 @@ input:invalid, select:invalid {
     flex-shrink: 0;
     display: flex;
     align-items: flex-start;
+}
+
+
+/* Стили для кнопок служб в форме ввода */
+#serviceButtonsContainer .service-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+#serviceButtonsContainer .service-btn {
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: var(--transition);
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+}
+
+#serviceButtonsContainer .service-btn:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+#serviceButtonsContainer .service-btn.active {
+    background: var(--accent);
+    color: var(--accent-text);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.2);
 }

@@ -1,23 +1,5 @@
 <div class="form-container">
     <h2>Ввод данных</h2>
-    <div class="form-group">
-        <label for="serviceSelect">Служба</label>
-        <select id="serviceSelect" required>
-            <option value="">-- Выберите --</option>
-            <option value="КС-1,4">КС-1,4</option>
-            <option value="КС-2,3">КС-2,3</option>
-            <option value="КС-5,6">КС-5,6</option>
-            <option value="КС-7,8">КС-7,8</option>
-            <option value="КС-9,10">КС-9,10</option>
-            <option value="АиМО">АиМО</option>
-            <option value="ЭВС">ЭВС</option>
-            <option value="ЛЭС">ЛЭС</option>
-            <option value="СЗК">СЗК</option>
-            <option value="Связь">Связь</option>
-            <option value="ВПО">ВПО</option>
-        </select>
-        <div class="error-message" id="serviceError" style="display: none;">Пожалуйста, выберите службу</div>
-    </div>
 
     <div class="form-group">
         <label>Тип отчета</label>
@@ -26,6 +8,26 @@
             <button type="button" class="type-button" data-type="weekly">Еженедельный</button>
         </div>
         <div class="error-message" id="typeError" style="display: none;">Пожалуйста, выберите тип отчета</div>
+    </div>
+
+    <div id="serviceButtonsContainer" style="display: none;">
+        <div class="form-group">
+            <label>Выберите службу</label>
+            <div class="service-buttons" id="serviceButtons">
+                <button class="service-btn" data-service="КС-1,4">КС-1,4</button>
+                <button class="service-btn" data-service="КС-2,3">КС-2,3</button>
+                <button class="service-btn" data-service="КС-5,6">КС-5,6</button>
+                <button class="service-btn" data-service="КС-7,8">КС-7,8</button>
+                <button class="service-btn" data-service="КС-9,10">КС-9,10</button>
+                <button class="service-btn" data-service="АиМО">АиМО</button>
+                <button class="service-btn" data-service="ЭВС">ЭВС</button>
+                <button class="service-btn" data-service="ЛЭС">ЛЭС</button>
+                <button class="service-btn" data-service="СЗК">СЗК</button>
+                <button class="service-btn" data-service="Связь">Связь</button>
+                <button class="service-btn" data-service="ВПО">ВПО</button>
+            </div>
+            <div class="error-message" id="serviceError" style="display: none;">Пожалуйста, выберите службу</div>
+        </div>
     </div>
 
     <form id="reportForm" style="display:none;">

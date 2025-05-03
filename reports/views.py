@@ -409,7 +409,7 @@ def handle_protocols(request):
             queryset = list(protocols.find(
                 {'archived': {'$ne': True}},
                 {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1}
-            ).sort('date', -1))
+            ).sort('date', 1))
 
             # Преобразуем ObjectId в строку и форматируем даты
             formatted_protocols = []

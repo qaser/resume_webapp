@@ -193,16 +193,66 @@ document.addEventListener('DOMContentLoaded', function() {
         const reportForm = document.getElementById("reportForm");
         const dynamicFields = document.getElementById("dynamicFields");
         const typeButtons = document.querySelectorAll(".type-button");
+        const serviceButtonsContainer = document.getElementById("serviceButtonsContainer");
+        const serviceButtons = document.querySelectorAll("#serviceButtons .service-btn");
+
+        let currentType = null;
+        let currentService = null;
 
         typeButtons.forEach(button => {
             button.addEventListener("click", async () => {
                 typeButtons.forEach(btn => btn.classList.remove("active"));
                 button.classList.add("active");
+                currentType = button.dataset.type;
+                document.getElementById("typeError").style.display = "none";
 
-                const type = button.dataset.type;
+                // Показываем выбор службы
+                serviceButtonsContainer.style.display = "block";
+                reportForm.style.display = "none";
+                currentService = null;
+
+                // Сбрасываем выбор службы
+                serviceButtons.forEach(btn => btn.classList.remove("active"));
+            });
+        });
+
+        serviceButtons.forEach(button => {
+            button.addEventListener("click", async () => {
+                serviceButtons.forEach(btn => btn.classList.remove("active"));
+                button.classList.add("active");
+                currentService = button.dataset.service;
+                document.getElementById("serviceError").style.display = "none";
+
                 try {
-                    dynamicFields.innerHTML = await loadTemplate(type);
-                    if (type === 'weekly') {loadProtocolsForReport()}
+                    // Загружаем соответствующий шаблон
+                    dynamicFields.innerHTML = await loadTemplate(currentType);
+
+                    // Если это weekly - загружаем протоколы и дополнительные поля
+                    if (currentType === 'weekly') {
+                        await loadProtocolsForReport(currentService);
+
+                        // Загружаем поле утечек отдельно
+                        const leaksHtml = await loadTemplate('leaks-field');
+                        dynamicFields.insertAdjacentHTML('beforeend', leaksHtml);
+
+                        // Показываем поле утечек для всех, кроме ВПО и Связь
+                        const leaksSection = document.querySelector('.form-group-leak');
+                        if (leaksSection) {
+                            const hideForServices = ['ВПО', 'Связь'];
+                            leaksSection.style.display = hideForServices.includes(currentService) ? 'none' : 'block';
+                        }
+
+                        // Загружаем поле КСС отдельно
+                        const kssHtml = await loadTemplate('kss-field');
+                        dynamicFields.insertAdjacentHTML('beforeend', kssHtml);
+
+                        // Показываем поле КСС только для ЛЭС
+                        const kssSection = document.querySelector('.form-group-kss');
+                        if (kssSection) {
+                            kssSection.style.display = currentService === 'ЛЭС' ? 'block' : 'none';
+                        }
+                    }
+
                     reportForm.style.display = "block";
 
                     // Инициализация обработчиков для полей ввода
@@ -226,26 +276,49 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         });
 
-        // Отправка формы (изменена для использования api.submitReport)
+        // Отправка формы
         reportForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const submitBtn = e.target.querySelector('button[type="submit"]');
             submitBtn.classList.add('loading');
 
             try {
+                if (!currentType) {
+                    throw new Error("Не выбран тип отчета");
+                }
+                if (!currentService) {
+                    throw new Error("Не выбрана служба");
+                }
+
                 const formData = new FormData(reportForm);
                 const data = {
-                    service: document.getElementById("serviceSelect").value,
-                    type: document.querySelector(".type-button.active").dataset.type,
+                    service: currentService,
+                    type: currentType,
                     csrfmiddlewaretoken: csrfToken
                 };
 
-                // Собираем данные протоколов
-                const protocolElements = document.querySelectorAll('.protocol-action-btn');
-                protocolElements.forEach(btn => {
-                    const protocolId = btn.dataset.id;
-                    data[`protocol_${protocolId}`] = btn.classList.contains('done') ? 'on' : 'off';
-                });
+                // Добавляем данные утечек для разрешенных служб
+                const hideForServices = ['ВПО', 'Связь'];
+                if (!hideForServices.includes(currentService) && currentType === 'weekly') {
+                    data.leak_total = parseInt(formData.get('leak_total')) || 0;
+                    data.leak_done = parseInt(formData.get('leak_done')) || 0;
+                }
+
+                // Для службы ЛЭС добавляем данные КСС
+                if (currentService === 'ЛЭС' && currentType === 'weekly') {
+                    const kssDone = formData.get('kss_done');
+                    if (kssDone) {
+                        data.kss_done = parseInt(kssDone);
+                    }
+                }
+
+                // Собираем данные протоколов для weekly
+                if (currentType === 'weekly') {
+                    document.querySelectorAll('.protocol-action-btn').forEach(btn => {
+                        const protocolId = btn.dataset.id;
+                        data[`protocol_${protocolId}`] = btn.classList.contains('done') ? 'on' : 'off';
+                    });
+                }
 
                 formData.forEach((value, key) => {
                     data[key] = value;
@@ -258,8 +331,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     reportForm.reset();
 
                     setTimeout(() => {
-                        dataInputBtn.click();
-                        renderDataInputForm();
+                        // Сбрасываем форму к начальному состоянию
+                        typeButtons.forEach(btn => btn.classList.remove("active"));
+                        serviceButtons.forEach(btn => btn.classList.remove("active"));
+                        serviceButtonsContainer.style.display = "none";
+                        reportForm.style.display = "none";
+                        currentType = null;
+                        currentService = null;
                     }, 1000);
                 } else {
                     throw new Error(result.message || 'Ошибка сохранения данных');
@@ -274,31 +352,42 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
 
-    async function loadProtocolsForReport() {
+    async function loadProtocolsForReport(service) {
         const container = document.getElementById('protocolsContainer');
+        if (!container) return;
+
         container.innerHTML = '<div class="loading">Загрузка мероприятий...</div>';
 
         try {
             const response = await api.getProtocols();
             if (response.status === 'success' && response.protocols.length > 0) {
                 let html = '';
-                const currentService = document.getElementById('serviceSelect').value;
 
                 response.protocols.forEach(protocol => {
                     if (!protocol.archived) {
-                        const protocolDate = new Date(protocol.date).toLocaleDateString();
-                        const isChecked = protocol.done && protocol.done[currentService];
+                        const isChecked = protocol.done && protocol.done[service];
 
                         html += `
                             <div class="protocol-item">
                                 <div class="protocol-info">
-                                    <div class="protocol-date">${protocolDate}</div>
+                                    <div class="protocol-date">${new Date(protocol.date).toLocaleDateString()}</div>
                                     <div class="protocol-text">${protocol.text}</div>
+                                    <div class="protocol-completed">
+                                        <div class="completed-label">${isChecked ? '✓ Выполнено вашей службой' : 'Не выполнено'}</div>
+                                        ${protocol.done && Object.keys(protocol.done).length > 0 ? `
+                                            <div class="completed-list">
+                                                ${Object.entries(protocol.done)
+                                                    .map(([dept, date]) =>
+                                                        `<div class="completed-item">${dept} (${new Date(date).toLocaleDateString()})</div>`
+                                                    ).join('')}
+                                            </div>
+                                        ` : ''}
+                                    </div>
                                 </div>
                                 <button class="protocol-action-btn ${isChecked ? 'done' : ''}"
                                         data-id="${protocol._id}"
                                         type="button">
-                                    ${isChecked ? '✓ Выполнено' : 'Не выполнено'}
+                                    ${isChecked ? '✓ Выполнено' : 'Отметить выполненным'}
                                 </button>
                             </div>
                         `;
@@ -307,29 +396,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 container.innerHTML = html || '<div class="no-data">Нет активных мероприятий</div>';
 
-                // Добавляем обработчики для кнопок
+                // Обработчики для кнопок протоколов
                 container.querySelectorAll('.protocol-action-btn').forEach(btn => {
                     btn.addEventListener('click', function() {
-                        const protocolId = this.dataset.id;
                         const isDone = this.classList.contains('done');
-
-                        // Инвертируем состояние
                         this.classList.toggle('done');
-                        this.textContent = isDone ? 'Не выполнено' : '✓ Выполнено';
+                        this.textContent = isDone ? 'Отметить выполненным' : '✓ Выполнено';
 
-                        // Сохраняем в скрытое поле формы для отправки
-                        const checkbox = document.querySelector(`input[name="protocol_${protocolId}"]`);
-                        if (checkbox) {
-                            checkbox.checked = !isDone;
-                        } else {
-                            // Создаём скрытое поле, если его нет
-                            const form = document.getElementById('reportForm');
-                            const hiddenInput = document.createElement('input');
-                            hiddenInput.type = 'hidden';
-                            hiddenInput.name = `protocol_${protocolId}`;
-                            hiddenInput.value = !isDone ? 'on' : 'off';
-                            form.appendChild(hiddenInput);
-                        }
+                        // Обновляем статус в блоке информации
+                        const infoBlock = this.closest('.protocol-item').querySelector('.completed-label');
+                        infoBlock.textContent = isDone ? 'Не выполнено' : '✓ Выполнено вашей службой';
                     });
                 });
             } else {
