@@ -694,31 +694,6 @@ input:invalid, select:invalid {
     margin-top: 30px;
 }
 
-.protocol-item {
-    background: var(--card-bg);
-    border-radius: var(--radius-sm);
-    padding: 16px;
-    margin-bottom: 16px;
-    border: 1px solid var(--border);
-    position: relative;
-}
-
-.protocol-date {
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 8px;
-}
-
-.protocol-text {
-    white-space: pre-line;
-    margin-bottom: 12px;
-}
-
-.protocol-actions {
-    display: flex;
-    justify-content: flex-end;
-}
-
 .archive-btn {
     padding: 6px 12px;
     border-radius: var(--radius-sm);
@@ -739,35 +714,6 @@ input:invalid, select:invalid {
     background: #7c3aed; /* Фиолетовый */
 }
 
-.protocol-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 12px;
-    padding: 12px;
-    background: var(--card-bg);
-    border-radius: var(--radius-sm);
-    border: 1px solid var(--border);
-    transition: all 0.2s ease;
-}
-
-.protocol-info {
-    flex-grow: 1;
-    margin-right: 12px;
-}
-
-.protocol-date {
-    font-weight: 600;
-    color: var(--text);
-    margin-bottom: 4px;
-}
-
-.protocol-text {
-    color: var(--hint);
-    font-size: 0.9rem;
-    white-space: pre-line;
-}
-
 .protocol-action-btn {
     padding: 8px 12px;
     border-radius: var(--radius-sm);
@@ -780,7 +726,7 @@ input:invalid, select:invalid {
     text-align: center;
     background-color: rgba(239, 68, 68, 0.1);
     color: #ef4444;
-    margin-left: 12px;
+    margin: 20px 12px 0 12px;
 }
 
 .protocol-action-btn.done {
@@ -844,6 +790,7 @@ input:invalid, select:invalid {
 .protocol-item {
     display: flex;
     justify-content: space-between;
+    flex-direction: column;
     padding: 16px;
     margin-bottom: 12px;
     background: var(--card-bg);
@@ -872,7 +819,9 @@ input:invalid, select:invalid {
 .protocol-actions {
     flex-shrink: 0;
     display: flex;
-    align-items: flex-start;
+    align-items: center;
+    flex-direction: row;
+    margin: 20px auto 0 auto
 }
 
 

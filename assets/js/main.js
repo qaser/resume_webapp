@@ -229,7 +229,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
                     // Если это weekly - загружаем протоколы и дополнительные поля
                     if (currentType === 'weekly') {
-                        await loadProtocolsForReport(currentService);
 
                         // Загружаем поле утечек отдельно
                         const leaksHtml = await loadTemplate('leaks-field');
@@ -251,6 +250,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         if (kssSection) {
                             kssSection.style.display = currentService === 'ЛЭС' ? 'block' : 'none';
                         }
+
+                        await loadProtocolsForReport(currentService);
                     }
 
                     reportForm.style.display = "block";
