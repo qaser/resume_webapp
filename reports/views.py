@@ -139,32 +139,45 @@ def handle_report(request):
     elif request.method == 'GET':
         try:
             service = request.GET.get('service')
+            all_reports = request.GET.get('all', '').lower() == 'true'
+
             if not service:
                 return JsonResponse({'status': 'error', 'message': 'Не указана служба'}, status=400)
 
-            # Получаем последний ежедневный и еженедельный отчеты
-            daily_report = reports.find_one(
-                {'department': service, 'type': 'daily'},
-                {'_id': 0, 'data': 1, 'datetime': 1, 'type': 1},
-                sort=[('datetime', -1)]
-            )
+            query = {'department': service}
+            if not all_reports:
+                # Получаем только последние отчеты каждого типа
+                daily_report = reports.find_one(
+                    {'department': service, 'type': 'daily'},
+                    {'_id': 0, 'data': 1, 'datetime': 1, 'type': 1},
+                    sort=[('datetime', -1)]
+                )
 
-            weekly_report = reports.find_one(
-                {'department': service, 'type': 'weekly'},
-                {'_id': 0, 'data': 1, 'datetime': 1, 'type': 1},
-                sort=[('datetime', -1)]
-            )
+                weekly_report = reports.find_one(
+                    {'department': service, 'type': 'weekly'},
+                    {'_id': 0, 'data': 1, 'datetime': 1, 'type': 1},
+                    sort=[('datetime', -1)]
+                )
 
-            reports_list = []
-            if daily_report:
-                daily_report['datetime'] = daily_report['datetime'].isoformat()
-                reports_list.append(daily_report)
-            if weekly_report:
-                weekly_report['datetime'] = weekly_report['datetime'].isoformat()
-                reports_list.append(weekly_report)
+                reports_list = []
+                if daily_report:
+                    daily_report['datetime'] = daily_report['datetime'].isoformat()
+                    reports_list.append(daily_report)
+                if weekly_report:
+                    weekly_report['datetime'] = weekly_report['datetime'].isoformat()
+                    reports_list.append(weekly_report)
+            else:
+                # Получаем все отчеты для навигации
+                reports_cursor = reports.find(
+                    {'department': service},
+                    {'_id': 0, 'data': 1, 'datetime': 1, 'type': 1}
+                ).sort('datetime', -1)
+
+                reports_list = list(reports_cursor)
+                for report in reports_list:
+                    report['datetime'] = report['datetime'].isoformat()
 
             return JsonResponse({'status': 'success', 'reports': reports_list})
-
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 

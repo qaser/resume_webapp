@@ -448,6 +448,7 @@
 
   /* Стили для отображения данных */
   .data-section {
+    display: block;
     background: var(--card-bg);
     border-radius: var(--radius-sm);
     padding: 16px;
@@ -510,9 +511,9 @@
 }
 
 .data-value {
-    font-weight: 600;
+    font-weight: 500;
     color: var(--text);
-    text-align: right; /* Выравнивание текста значения по правому краю */
+    text-align: left; /* Выравнивание текста значения по правому краю */
     flex-shrink: 0; /* Запрет уменьшения ширины */
 }
 
@@ -522,11 +523,48 @@
     padding: 0;
 }
 
-  .data-header {
+.data-header {
     display: flex;
-    justify-content: center;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 15px;
-  }
+    position: relative;
+}
+
+.nav-arrows {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.nav-arrow:hover {
+    background: var(--accent);
+    color: var(--accent-text);
+}
+
+.nav-arrow:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.nav-arrow svg {
+    width: 16px;
+    height: 16px;
+}
 
   /* Адаптация для мобильных */
   @media (max-width: 640px) {

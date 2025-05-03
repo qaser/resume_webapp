@@ -18,7 +18,7 @@ const api = {
 
     // Получение отчетов по службе
     async getReports(service) {
-        const response = await fetch(`/api/reports/?service=${encodeURIComponent(service)}`);
+        const response = await fetch(`/api/reports/?service=${encodeURIComponent(service)}&all=true`);
         return await response.json();
     },
 
@@ -477,7 +477,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const getRemarkData = (type) => {
                 if (!remarks) return null;
-                return remarks.find(r => r.value === type) || null; // Ищем в массиве remarks
+                return remarks.find(r => r.value === type) || null;
             };
 
             const getPlanData = (type) => {
@@ -485,17 +485,32 @@ document.addEventListener('DOMContentLoaded', function() {
                 return plans.find(p => p.value === type) || null;
             };
 
+            // Разделяем отчеты по типам
+            const dailyReports = reports.filter(r => r.type === 'daily').sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+            const weeklyReports = reports.filter(r => r.type === 'weekly').sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
+
             let html = '';
 
-            reports.forEach(report => {
+            // Функция для рендеринга отчета с навигацией
+            const renderReportWithNavigation = (report, reportType, reportsList, index) => {
                 const date = new Date(report.datetime).toLocaleString();
-                const type = report.type === 'daily' ? 'Ежедневный отчёт' : 'Еженедельный отчёт';
+                const type = reportType === 'daily' ? 'Ежедневный отчёт' : 'Еженедельный отчёт';
                 const data = report.data;
 
-                html += `
-                    <div class="data-section">
+                return `
+                    <div class="data-section" data-type="${reportType}" data-index="${index}">
                         <div class="data-header">
+                            <button class="nav-arrow prev-arrow" ${index === reportsList.length - 1 ? 'disabled' : ''}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M15 18l-6-6 6-6"/>
+                                </svg>
+                            </button>
                             <h3>${type} на ${date}</h3>
+                            <button class="nav-arrow next-arrow" ${index === 0 ? 'disabled' : ''}>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 18l6-6-6-6"/>
+                                </svg>
+                            </button>
                         </div>
 
                         ${renderDataGroup('Задания на день', data.tasks)}
@@ -548,9 +563,43 @@ document.addEventListener('DOMContentLoaded', function() {
                         }) : ''}
                     </div>
                 `;
-            });
+            };
+
+            // Рендерим последний ежедневный отчет
+            if (dailyReports.length > 0) {
+                html += renderReportWithNavigation(dailyReports[0], 'daily', dailyReports, 0);
+            }
+
+            // Рендерим последний еженедельный отчет
+            if (weeklyReports.length > 0) {
+                html += renderReportWithNavigation(weeklyReports[0], 'weekly', weeklyReports, 0);
+            }
 
             dataDisplay.innerHTML = html;
+
+            // Добавляем обработчики для кнопок навигации
+            document.querySelectorAll('.nav-arrow').forEach(arrow => {
+                arrow.addEventListener('click', function() {
+                    const section = this.closest('.data-section');
+                    const reportType = section.dataset.type;
+                    const currentIndex = parseInt(section.dataset.index);
+                    const reportsList = reportType === 'daily' ? dailyReports : weeklyReports;
+
+                    let newIndex = currentIndex;
+                    if (this.classList.contains('prev-arrow')) {
+                        newIndex = currentIndex + 1; // Более старый отчет
+                    } else if (this.classList.contains('next-arrow')) {
+                        newIndex = currentIndex - 1; // Более новый отчет
+                    }
+
+                    if (newIndex >= 0 && newIndex < reportsList.length) {
+                        const newReport = reportsList[newIndex];
+                        const newHtml = renderReportWithNavigation(newReport, reportType, reportsList, newIndex);
+                        section.outerHTML = newHtml;
+                    }
+                });
+            });
+
         } catch (error) {
             console.error('Неожиданная ошибка:', error);
             dataDisplay.innerHTML = `
