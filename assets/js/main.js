@@ -98,6 +98,47 @@ const api = {
             body: JSON.stringify({ service, done_date: doneDate })
         });
         return await response.json();
+    },
+
+    async getOrders() {
+        const response = await fetch('/api/orders/');
+        return await response.json();
+    },
+
+    // Добавление распоряжений
+    async addOrder(data) {
+        const response = await fetch('/api/orders/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    },
+
+    // Архивирование распоряжения
+    async archiveOrder(id) {
+        const response = await fetch(`/api/orders/${id}/archive/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrfToken,
+            }
+        });
+        return await response.json();
+    },
+
+    async updateOrder(orderId, service, doneDate) {
+        const response = await fetch(`/api/orders/${orderId}/done/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+            },
+            body: JSON.stringify({ service, done_date: doneDate })
+        });
+        return await response.json();
     }
 };
 
@@ -107,6 +148,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const dataViewBtn = document.getElementById("dataViewBtn");
     const dataPlanBtn = document.getElementById("dataPlanBtn");
     const dataProtocolBtn = document.getElementById("dataProtocolBtn");
+    const dataOuterRemarksBtn = document.getElementById("dataOuterRemarksBtn");
+    const dataOrderlBtn = document.getElementById("dataOrderlBtn");
 
     // Инициализация приложения
     initApp();
@@ -118,6 +161,8 @@ document.addEventListener('DOMContentLoaded', function() {
             dataViewBtn.classList.remove("active");
             dataPlanBtn.classList.remove("active");
             dataProtocolBtn.classList.remove("active");
+            dataOuterRemarksBtn.classList.remove("active");
+            dataOrderlBtn.classList.remove("active");
             renderDataInputForm();
         });
 
@@ -126,6 +171,8 @@ document.addEventListener('DOMContentLoaded', function() {
             dataInputBtn.classList.remove("active");
             dataPlanBtn.classList.remove("active");
             dataProtocolBtn.classList.remove("active");
+            dataOuterRemarksBtn.classList.remove("active");
+            dataOrderlBtn.classList.remove("active");
             renderDataViewForm();
         });
 
@@ -134,6 +181,8 @@ document.addEventListener('DOMContentLoaded', function() {
             dataInputBtn.classList.remove("active");
             dataViewBtn.classList.remove("active");
             dataProtocolBtn.classList.remove("active");
+            dataOuterRemarksBtn.classList.remove("active");
+            dataOrderlBtn.classList.remove("active");
             renderPlanningForm();
         });
 
@@ -142,7 +191,29 @@ document.addEventListener('DOMContentLoaded', function() {
             dataInputBtn.classList.remove("active");
             dataViewBtn.classList.remove("active");
             dataPlanBtn.classList.remove("active");
+            dataOuterRemarksBtn.classList.remove("active");
+            dataOrderlBtn.classList.remove("active");
             renderProtocolForm();
+        });
+
+        dataOuterRemarksBtn.addEventListener("click", () => {
+            dataOuterRemarksBtn.classList.add("active");
+            dataInputBtn.classList.remove("active");
+            dataViewBtn.classList.remove("active");
+            dataPlanBtn.classList.remove("active");
+            dataProtocolBtn.classList.remove("active");
+            dataOrderlBtn.classList.remove("active");
+            // renderOrderForm();
+        });
+
+        dataOrderlBtn.addEventListener("click", () => {
+            dataOrderlBtn.classList.add("active");
+            dataInputBtn.classList.remove("active");
+            dataViewBtn.classList.remove("active");
+            dataPlanBtn.classList.remove("active");
+            dataProtocolBtn.classList.remove("active");
+            dataOuterRemarksBtn.classList.remove("active");
+            renderOrderForm();
         });
 
         // По умолчанию показываем форму ввода
@@ -663,6 +734,12 @@ document.addEventListener('DOMContentLoaded', function() {
         initProtocolForm();
     }
 
+    // Функция для рендеринга формы распоряжений:
+    async function renderOrderForm() {
+        appContainer.innerHTML = await loadTemplate('order-form');
+        initOrderForm();
+    }
+
     // Инициализация формы протоколов
     function initProtocolForm() {
         const protocolForm = document.getElementById("protocolForm");
@@ -787,6 +864,138 @@ document.addEventListener('DOMContentLoaded', function() {
                 protocolsList.innerHTML = `
                     <div class="error">
                         Ошибка загрузки протоколов
+                        <div class="error-detail">${error.message}</div>
+                    </div>
+                `;
+            }
+        }
+    }
+
+    // Инициализация формы распоряжений
+    function initOrderForm() {
+        const orderForm = document.getElementById("orderForm");
+        const ordersList = document.getElementById("ordersList");
+
+        // Загрузка списка распоряжений
+        loadOrders();
+
+        // Обработка отправки формы
+        orderForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+            submitBtn.classList.add('loading');
+
+            try {
+                const formData = new FormData(orderForm);
+                const data = {
+                    date: formData.get('date'),
+                    num: formData.get('num'),
+                    text: formData.get('text'),
+                    csrfmiddlewaretoken: csrfToken
+                };
+
+                const result = await api.addOrder(data);
+
+                if (result.status === 'success') {
+                    showNotification('✓ Распоряжение успешно добавлено', 'success');
+                    orderForm.reset();
+                    loadOrders();
+                } else {
+                    throw new Error(result.message || 'Ошибка добавления распоряжения');
+                }
+            } catch (error) {
+                console.error('Ошибка:', error);
+                showNotification(error.message || 'Ошибка при добавлении распоряжения', 'error');
+            } finally {
+                submitBtn.classList.remove('loading');
+            }
+        });
+
+        // Функция загрузки протоколов
+        async function loadOrders() {
+            ordersList.innerHTML = '<div class="loading">Загрузка данных...</div>';
+
+            try {
+                const result = await api.getOrders();
+
+                if (result.status === 'success') {
+                    if (result.orders && result.orders.length > 0) {
+                        let html = '';
+                        result.orders.forEach(order => {
+                            if (!order.archived) {
+                                // Формируем список выполненных служб
+                                let completedByHtml = '<div class="order-completed">Не выполнено</div>';
+                                if (order.done && Object.keys(order.done).length > 0) {
+                                    completedByHtml = `
+                                        <div class="order-completed">
+                                            <div class="completed-label">Выполнено:</div>
+                                            <div class="completed-list">
+                                                ${Object.entries(order.done)
+                                                    .map(([dept, date]) => {
+                                                        const formattedDate = new Date(date).toLocaleDateString();
+                                                        return `<div class="completed-item">${dept} (${formattedDate})</div>`;
+                                                    })
+                                                    .join('')}
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+
+                                html += `
+                                    <div class="order-item" data-id="${order._id}">
+                                        <div class="order-info">
+                                            <div class="order-num">№${order.num}</div>
+                                            <div class="order-date">${new Date(order.date).toLocaleDateString()}</div>
+                                            <div class="order-text">${order.text}</div>
+                                            ${completedByHtml}
+                                        </div>
+                                        <div class="order-actions">
+                                            <button class="archive-btn" data-id="${order._id}">Архивировать</button>
+                                        </div>
+                                    </div>
+                                `;
+                            }
+                        });
+
+                        if (html === '') {
+                            html = '<div class="no-data">Нет активных распоряжений</div>';
+                        }
+
+                        ordersList.innerHTML = '<h3>Список распоряжений (приказов)</h3>' + html;
+
+                        document.querySelectorAll('.archive-btn').forEach(btn => {
+                            btn.addEventListener('click', async function() {
+                                const orderId = this.dataset.id;
+                                const orderItem = this.closest('.order-item');
+
+                                if (confirm('Вы уверены, что хотите архивировать это распоряжение?')) {
+                                    try {
+                                        const result = await api.archiveOrder(orderId);
+
+                                        if (result.status === 'success') {
+                                            showNotification('✓ Распоряжение архивировано', 'success');
+                                            orderItem.remove();
+                                        } else {
+                                            throw new Error(result.message || 'Ошибка архивирования');
+                                        }
+                                    } catch (error) {
+                                        console.error('Ошибка:', error);
+                                        showNotification(error.message || 'Ошибка архивирования', 'error');
+                                    }
+                                }
+                            });
+                        });
+                    } else {
+                        ordersList.innerHTML = '<h3>Список распоряжений (приказов)</h3><div class="no-data">Нет активных распоряжений</div>';
+                    }
+                } else {
+                    throw new Error(result.message || 'Ошибка загрузки распоряжений');
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки распоряжений:', error);
+                ordersList.innerHTML = `
+                    <div class="error">
+                        Ошибка загрузки распоряжений
                         <div class="error-detail">${error.message}</div>
                     </div>
                 `;

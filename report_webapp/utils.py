@@ -9,9 +9,22 @@ kss = db['kss']
 remarks = db['remarks']
 leaks = db['leaks']
 protocols = db['protocols']
+orders = db['orders']
 
 
 '''
+структура данных orders:
+{
+    '_id': порядковый номер,
+    'created_at': datetime,
+    'num': номер распоряжения или приказа (текст),
+    'date': требуемая дата исполнения,
+    'text': содержание распоряжения,
+    'done': {'КС-1,4': дата_выполнения},
+    'archived': True/False
+    'archived_at': datetime
+}
+
 структура данных protocol:
 {
     '_id': порядковый номер,

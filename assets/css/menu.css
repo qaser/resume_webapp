@@ -1,0 +1,37 @@
+.main-menu {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 32px 24px;
+    box-shadow: var(--shadow);
+    max-width: 640px;
+    margin: 40px auto;
+    text-align: center;
+    transition: var(--transition);
+}
+
+.main-menu h1 {
+    font-size: 1.75rem;
+    margin-bottom: 32px;
+    color: var(--text);
+    position: relative;
+    padding-bottom: 12px;
+}
+
+.main-menu h1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 3px;
+}
+
+.menu-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+}

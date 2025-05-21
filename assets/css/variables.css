@@ -1,0 +1,45 @@
+:root {
+    --bg-color: var(--tg-theme-bg-color, #f8fafc);
+    --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
+    --accent: var(--tg-theme-button-color, #3b82f6);
+    --accent-hover: var(--tg-theme-button-color, #2563eb);
+    --accent-text: var(--tg-theme-button-text-color, #ffffff);
+    --text: var(--tg-theme-text-color, #1e293b);
+    --hint: var(--tg-theme-hint-color, #64748b);
+    --link: var(--tg-theme-link-color, #3b82f6);
+    --border: var(--tg-theme-border-color, grey);
+    --radius: 16px;
+    --radius-sm: 12px;
+    --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* Цвета групп с прозрачностью */
+    --apk-color: rgba(234, 179, 8, 0.2);
+    --leak-color: rgba(16, 185, 129, 0.2);
+    --ozp-color: rgba(14, 165, 233, 0.2);
+    --gaz-color: rgba(139, 92, 246, 0.2);
+    --ros-color: rgba(244, 63, 94, 0.2);
+    --rp-color: rgba(239, 68, 68, 0.2);
+    --pat-color: rgba(101, 163, 13, 0.2);
+    --tu-color: rgba(5, 150, 105, 0.2);
+    --kss-color: rgba(14, 165, 233, 0.2);
+}
+
+/* Темная тема */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --border: var(--tg-theme-border-color, rgba(255, 255, 255, 0.5));
+        --shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+
+        /* Более насыщенные цвета для темной темы */
+        --apk-color: rgba(234, 179, 8, 0.15);
+        --leak-color: rgba(16, 185, 129, 0.15);
+        --ozp-color: rgba(14, 165, 233, 0.15);
+        --gaz-color: rgba(139, 92, 246, 0.15);
+        --ros-color: rgba(244, 63, 94, 0.15);
+        --rp-color: rgba(239, 68, 68, 0.15);
+        --pat-color: rgba(101, 163, 13, 0.15);
+        --tu-color: rgba(5, 150, 105, 0.15);
+        --kss-color: rgba(14, 165, 233, 0.15);
+    }
+}

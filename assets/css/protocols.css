@@ -1,0 +1,85 @@
+.protocols-list {
+    margin-top: 30px;
+}
+
+.form-group-protocol::before {
+    background: #7c3aed;
+}
+
+.protocol-item {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+}
+
+.protocol-info {
+    flex-grow: 1;
+    margin-right: 16px;
+}
+
+.protocol-date {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.protocol-text {
+    color: var(--text);
+    margin-bottom: 8px;
+    white-space: pre-line;
+}
+
+.protocol-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    margin: 20px auto 0 auto;
+}
+
+.protocol-completed {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--hint);
+}
+
+.protocol-completed .completed-label {
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.protocol-completed .completed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.protocol-completed .completed-item {
+    padding: 4px 8px;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 4px;
+    color: #10b981;
+    font-size: 0.8rem;
+    display: inline-block;
+    width: fit-content;
+}
+
+.protocol-completed:not(:has(.completed-label)) {
+    color: var(--hint);
+    font-style: italic;
+    padding: 4px 0;
+}
+
+#serviceButtonsContainer .service-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}

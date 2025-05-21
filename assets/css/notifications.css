@@ -1,0 +1,46 @@
+.notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    z-index: 1000;
+    opacity: 1;
+    animation: slideIn 0.3s ease-out;
+    transition: opacity 0.3s ease;
+    color: white;
+    max-width: 80%;
+    text-align: center;
+}
+
+.success-notification {
+    background: green;
+}
+
+.error-notification {
+    background: red;
+}
+
+.error {
+    background-color: #fee2e2;
+    color: #b91c1c;
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    margin: 1rem 0;
+}
+
+.error-detail {
+    font-size: 0.9em;
+    margin-top: 0.5rem;
+    color: #7f1d1d;
+}
+
+.no-data {
+    background-color: #f0fdf4;
+    color: #166534;
+    padding: 1rem;
+    border-radius: var(--radius-sm);
+    margin: 1rem 0;
+}

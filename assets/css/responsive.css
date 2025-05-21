@@ -1,0 +1,33 @@
+@media (max-width: 480px) {
+    .form-container {
+        padding: 16px;
+    }
+
+    .button-group {
+        flex-direction: column;
+    }
+}
+
+@media (max-width: 640px) {
+    .main-menu {
+        margin: 20px auto;
+        padding: 24px 16px;
+    }
+
+    .menu-buttons {
+        flex-direction: column;
+    }
+
+    .menu-button {
+        width: 100%;
+    }
+
+    .service-buttons {
+        gap: 8px;
+    }
+
+    .service-btn {
+        padding: 8px 12px;
+        font-size: 0.8rem;
+    }
+}

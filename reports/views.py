@@ -4,7 +4,7 @@ from datetime import datetime
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
-from report_webapp.utils import reports, plans, kss, remarks, leaks, protocols
+from report_webapp.utils import reports, plans, kss, remarks, leaks, protocols, orders
 
 # Словарь для преобразования технических имен в читаемые
 FIELD_NAMES_MAPPING = {
@@ -513,4 +513,97 @@ def mark_protocol_done(request, protocol_id):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
 
+    return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
+
+
+@csrf_exempt
+def handle_orders(request):
+    if request.method == 'GET':
+        try:
+            # Получаем только неархивированные распоряжения
+            queryset = list(orders.find(
+                {'archived': {'$ne': True}},
+                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1, 'num': 1}
+            ).sort('date', 1))
+            # Преобразуем ObjectId в строку и форматируем даты
+            formatted_orders = []
+            for order in queryset:
+                formatted = {
+                    '_id': str(order['_id']),
+                    'num': order['num'],
+                    'date': order['date'].isoformat(),
+                    'text': order['text'],
+                    'done': {}
+                }
+                # Форматируем информацию о выполнении
+                if 'done' in order:
+                    for dept, date in order['done'].items():
+                        if isinstance(date, datetime):
+                            formatted['done'][dept] = date.isoformat()
+                        else:
+                            # Если дата уже в строковом формате (на всякий случай)
+                            formatted['done'][dept] = date
+                formatted_orders.append(formatted)
+            return JsonResponse({
+                'status': 'success',
+                'orders': formatted_orders
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            order_data = {
+                'date': datetime.fromisoformat(data['date']),
+                'text': data['text'],
+                'num': data['num'],
+                'archived': False,
+                'created_at': datetime.now()
+            }
+            result = orders.insert_one(order_data)
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Распоряжение (приказ) успешно добавлено',
+                'id': str(result.inserted_id)
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
+
+
+@csrf_exempt
+def archive_order(request, order_id):
+    print(orders.find_one({'_id': ObjectId(order_id)}))
+    if request.method == 'POST':
+        try:
+            result = orders.update_one(
+                {'_id': ObjectId(order_id)},
+                {'$set': {'archived': True, 'archived_at': datetime.now()}}
+            )
+            if result.modified_count == 1:
+                return JsonResponse({'status': 'success', 'message': 'Распоряжение архивировано'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Распоряжение не найдено'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
+
+
+@csrf_exempt
+def mark_order_done(request, order_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            service = data.get('service')
+            done_date = datetime.fromisoformat(data.get('done_date'))
+            result = orders.update_one(
+                {'_id': ObjectId(order_id)},
+                {'$set': {f'done.{service}': done_date}}
+            )
+            if result.modified_count == 1:
+                return JsonResponse({'status': 'success', 'message': 'Протокол обновлен'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Протокол не найден'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))

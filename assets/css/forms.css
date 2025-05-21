@@ -1,0 +1,141 @@
+.form-container {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    max-width: 640px;
+    margin: 0 auto;
+    transition: var(--transition);
+}
+
+.form-container h2 {
+    text-align: center;
+    margin-bottom: 24px;
+    font-size: 1.5rem;
+    color: var(--text);
+    position: relative;
+    padding-bottom: 12px;
+}
+
+.form-container h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 3px;
+}
+
+.title {
+    text-align: center;
+    margin-bottom: 24px;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    position: relative;
+    padding-bottom: 12px;
+}
+
+.title::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 3px;
+}
+
+.form-group-section {
+    padding: 16px;
+    border-radius: var(--radius-sm);
+    margin-bottom: 20px;
+    border: 1px solid var(--border);
+    background-color: var(--card-bg);
+    position: relative;
+    overflow: hidden;
+    transition: var(--transition);
+}
+
+.form-group-section::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+}
+
+.form-group-apk::before { background: #eab308; }
+.form-group-leak::before { background: #10b981; }
+.form-group-ozp::before { background: #0ea5e9; }
+.form-group-gaz::before { background: #8b5cf6; }
+.form-group-ros::before { background: #f43f5e; }
+.form-group-rp::before { background: #ef4444; }
+.form-group-pat::before { background: #65a30d; }
+.form-group-tu::before { background: #059669; }
+.form-group-kss::before { background: #0ea5e9; }
+
+.group-title {
+    font-weight: 600;
+    margin-bottom: 16px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-group {
+    margin-bottom: 16px;
+}
+
+label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--text);
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 1rem;
+    background-color: var(--card-bg);
+    color: var(--text);
+    transition: var(--transition);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+textarea {
+    min-height: 100px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.error-message {
+    color: #dc3545;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: none;
+}
+
+input:invalid, select:invalid {
+    border-color: #dc3545;
+}

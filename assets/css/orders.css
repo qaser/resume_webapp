@@ -1,0 +1,140 @@
+/* Стили для orders*/
+.orders-list {
+    margin-top: 30px;
+}
+
+.archive-btn {
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    border: none;
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.archive-btn:hover {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+/* Стили для orders нев форме */
+.form-group-order::before {
+    background: #7c3aed; /* Фиолетовый */
+}
+
+.order-action-btn {
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    min-width: 160px;
+    text-align: center;
+    background-color: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+    margin: 20px 12px 0 12px;
+}
+
+.order-action-btn.done {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.order-action-btn.done {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+.order-action-btn:hover {
+    transform: translateY(-1px);
+}
+
+.order-action-btn:active {
+    transform: translateY(0);
+}
+
+.order-completed {
+    margin-top: 8px;
+    font-size: 0.85rem;
+    color: var(--hint);
+}
+
+.order-completed .completed-label {
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.order-completed .completed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.completed-label:contains("✓") {
+    color: #10b981;
+}
+
+.order-completed .completed-item {
+    padding: 4px 8px;
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 4px;
+    color: #10b981;
+    font-size: 0.8rem;
+    display: inline-block;
+    width: fit-content;
+}
+
+/* Стиль для случая, когда orders не выполнен */
+.order-completed:not(:has(.completed-label)) {
+    color: var(--hint);
+    font-style: italic;
+    padding: 4px 0;
+}
+
+
+.order-item {
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
+}
+
+.order-info {
+    flex-grow: 1;
+    margin-right: 16px;
+}
+
+.order-num {
+    font-weight: 600;
+    color: blue;
+    margin-bottom: 8px;
+}
+
+.order-date {
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 6px;
+}
+
+.order-text {
+    color: var(--text);
+    margin-bottom: 8px;
+    white-space: pre-line;
+}
+
+.order-actions {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    margin: 20px auto 0 auto
+}

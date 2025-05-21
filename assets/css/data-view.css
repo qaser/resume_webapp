@@ -1,0 +1,173 @@
+.view-container {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    margin-top: 20px;
+}
+
+.view-container h2 {
+    text-align: center;
+    margin-bottom: 24px;
+    font-size: 1.5rem;
+    color: var(--text);
+    position: relative;
+    padding-bottom: 12px;
+}
+
+.view-container h2::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 3px;
+}
+
+.service-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.data-section {
+    display: block;
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    padding: 16px;
+    margin-top: 16px;
+    border: 1px solid var(--border);
+    animation: fadeIn 0.3s ease-out;
+}
+
+.data-group {
+    margin-bottom: 20px;
+}
+
+.data-group-title {
+    font-weight: 600;
+    justify-content: center;
+    margin-bottom: 8px;
+    color: black;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.data-group-title.apk { background-color: #fef3c7; }
+.data-group-title.leak { background-color: #d1fae5; }
+.data-group-title.ozp { background-color: #bae6fd; }
+.data-group-title.gaz { background-color: #ddd6fe; }
+.data-group-title.ros { background-color: #fbcfe8; }
+.data-group-title.rp { background-color: #fecaca; }
+.data-group-title.pat { background-color: #d9f99d; }
+.data-group-title.tu { background-color: #bbf7d0; }
+.data-group-title.kss { background-color: #c7d2fe; }
+.data-group-title.faults { background-color: #e5e7eb; }
+.data-group-title.tasks { background-color: #f3f4f6; }
+
+.data-group .data-value {
+    white-space: pre-line;
+    line-height: 1.5;
+    padding: 8px 0;
+}
+
+.data-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px dashed var(--border);
+    min-height: 32px;
+}
+
+.data-item:last-child {
+    border-bottom: none;
+}
+
+.data-label {
+    font-weight: 500;
+    color: var(--hint);
+    padding-right: 10px;
+}
+
+.data-value {
+    font-weight: 500;
+    color: var(--text);
+    text-align: left;
+    flex-shrink: 0;
+}
+
+.data-group .data-item {
+    border-bottom: none;
+    padding: 0;
+}
+
+.data-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    position: relative;
+}
+
+.nav-arrows {
+    display: flex;
+    gap: 10px;
+}
+
+.nav-arrow {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--accent);
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.nav-arrow:hover {
+    background: var(--accent);
+    color: var(--accent-text);
+}
+
+.nav-arrow:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: rgba(59, 130, 246, 0.05);
+}
+
+.nav-arrow svg {
+    width: 16px;
+    height: 16px;
+}
+
+.data-item.reason-item {
+    display: block;
+    padding: 8px 0;
+    border-bottom: none;
+}
+
+.reason-item .data-label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 500;
+    color: var(--hint);
+}
+
+.reason-item .reason-text {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    line-height: 1.5;
+    white-space: pre-line;
+}
