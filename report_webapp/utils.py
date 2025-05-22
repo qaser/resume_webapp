@@ -2,7 +2,14 @@ from pymongo import MongoClient
 from django.conf import settings
 
 client = MongoClient(settings.MONGO_URI)
+
 db = client['report_webapp']
+db_poks = client['poks_bot_db']
+
+gpa = db_poks['gpa']
+paths = db_poks['paths']
+reqs = db_poks['requests']
+
 reports = db['reports']
 plans = db['plans']
 kss = db['kss']
