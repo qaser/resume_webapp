@@ -10,7 +10,8 @@ DEBUG = False
 
 ALLOWED_HOSTS = ['*']
 
-CORS_ALLOWED_ORIGINS = ["*"]
+# CORS_ALLOWED_ORIGINS = ["*"]
+CORS_ALLOW_ALL_ORIGINS = True
 
 INSTALLED_APPS = [
     'api',
