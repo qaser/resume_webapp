@@ -24,6 +24,7 @@ def insert_users():
             '_id': idx,
             'department': department,
             'is_admin': False,
+            # 'password': 'qwerty'
             'password': generate_password()
         }
         users_data.append(user)

@@ -1,9 +1,22 @@
 import ApiService from './api.js';
+import ProtocolsManager from './protocols.js';
+import OrdersManager from './orders.js';
+import PlanningManager from './planning.js';
 
 const scriptPath = document.currentScript?.src || new URL(import.meta.url).pathname;
 const basePath = scriptPath.substring(0, scriptPath.lastIndexOf('/') + 1);
 
 const api = new ApiService(csrfToken);
+const protocolsManager = new ProtocolsManager(api, csrfToken);
+const ordersManager = new OrdersManager(api, csrfToken);
+const planningManager = new PlanningManager(api, csrfToken);
+
+const AppState = {
+    currentUser: {
+        department: localStorage.getItem("department") || "",
+        isAdmin: localStorage.getItem("department") === "Админ"
+    }
+};
 
 document.addEventListener('DOMContentLoaded', function() {
     const appContainer = document.getElementById("app-container");
@@ -512,361 +525,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     async function renderPlanningForm() {
-        const currentYear = new Date().getFullYear();
-        const years = [currentYear, currentYear + 1, currentYear + 2];
-        const currentUserDepartment = localStorage.getItem("department");
-        const isAdmin = currentUserDepartment === "Админ";
-
-        // Подготавливаем опции для служб
-        let serviceOptions = '';
-        if (isAdmin) {
-            serviceOptions = `
-                <option value="">-- Выберите службу --</option>
-                <option value="КС-1,4">КС-1,4</option>
-                <option value="КС-2,3">КС-2,3</option>
-                <option value="КС-5,6">КС-5,6</option>
-                <option value="КС-7,8">КС-7,8</option>
-                <option value="КС-9,10">КС-9,10</option>
-                <option value="АиМО">АиМО</option>
-                <option value="ЭВС">ЭВС</option>
-                <option value="ЛЭС">ЛЭС</option>
-                <option value="СЗК">СЗК</option>
-                <option value="Связь">Связь</option>
-                <option value="ВПО">ВПО</option>
-            `;
-        } else {
-            serviceOptions = `<option value="${currentUserDepartment}" selected>${currentUserDepartment}</option>`;
-        }
-
-        appContainer.innerHTML = await loadTemplate('planning-form', {
-            yearOptions: years.map(year => `<option value="${year}">${year}</option>`).join(''),
-            serviceOptions: serviceOptions,
-            currentDepartment: currentUserDepartment
-        });
-
-        const form = document.getElementById('planningForm');
-        const serviceSelect = document.getElementById('planServiceSelect');
-
-        // Для не-админов заменяем select на отображение department
-        if (!isAdmin) {
-            const formGroup = serviceSelect.closest('.form-group');
-            formGroup.innerHTML = `
-                <label>Служба</label>
-                <div class="current-department">${currentUserDepartment}</div>
-                <input type="hidden" id="planServiceSelect" value="${currentUserDepartment}">
-            `;
-        }
-
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            submitBtn.classList.add('loading');
-
-            try {
-                const formData = new FormData(this);
-                const data = {
-                    service: isAdmin ? serviceSelect.value : currentUserDepartment,
-                    year: document.getElementById('planYearSelect').value,
-                    csrfmiddlewaretoken: csrfToken
-                };
-
-                formData.forEach((value, key) => {
-                    if (value) data[key] = value;
-                });
-
-                const result = await api.savePlan(data);
-
-                if (result.status === 'success') {
-                    showNotification('✓ План успешно сохранён', 'success');
-                    setTimeout(() => {
-                        dataInputBtn.click();
-                        renderDataInputForm();
-                    }, 500);
-                } else {
-                    throw new Error(result.message || 'Ошибка сохранения плана');
-                }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                showNotification(error.message || 'Ошибка при сохранении плана', 'error');
-            } finally {
-                submitBtn.classList.remove('loading');
-            }
-        });
+        const { html, init } = await planningManager.renderPlanningForm(AppState.currentUser.isAdmin);
+        appContainer.innerHTML = html;
+        init();
     }
 
-    // Функция для рендеринга формы протоколов:
     async function renderProtocolForm() {
-        appContainer.innerHTML = await loadTemplate('protocol-form');
-        initProtocolForm();
+        const { html, init } = await protocolsManager.renderProtocolForm(AppState.currentUser.isAdmin);
+        appContainer.innerHTML = html;
+        init();
     }
 
-    // Функция для рендеринга формы распоряжений:
     async function renderOrderForm() {
-        appContainer.innerHTML = await loadTemplate('order-form');
-        initOrderForm();
-    }
-
-    // Инициализация формы протоколов
-    function initProtocolForm() {
-        const protocolForm = document.getElementById("protocolForm");
-        const protocolsList = document.getElementById("protocolsList");
-
-        // Загрузка списка протоколов
-        loadProtocols();
-
-        // Обработка отправки формы
-        protocolForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            submitBtn.classList.add('loading');
-
-            try {
-                const formData = new FormData(protocolForm);
-                const data = {
-                    date: formData.get('date'),
-                    text: formData.get('text'),
-                    csrfmiddlewaretoken: csrfToken
-                };
-
-                const result = await api.addProtocol(data);
-
-                if (result.status === 'success') {
-                    showNotification('✓ Протокол успешно добавлен', 'success');
-                    protocolForm.reset();
-                    loadProtocols();
-                } else {
-                    throw new Error(result.message || 'Ошибка добавления протокола');
-                }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                showNotification(error.message || 'Ошибка при добавлении протокола', 'error');
-            } finally {
-                submitBtn.classList.remove('loading');
-            }
-        });
-
-        // Функция загрузки протоколов
-        async function loadProtocols() {
-            protocolsList.innerHTML = '<div class="loading">Загрузка данных...</div>';
-
-            try {
-                const result = await api.getProtocols();
-
-                if (result.status === 'success') {
-                    if (result.protocols && result.protocols.length > 0) {
-                        let html = '';
-                        result.protocols.forEach(protocol => {
-                            if (!protocol.archived) {
-                                // Формируем список выполненных служб
-                                let completedByHtml = '<div class="protocol-completed">Не выполнено</div>';
-                                if (protocol.done && Object.keys(protocol.done).length > 0) {
-                                    completedByHtml = `
-                                        <div class="protocol-completed">
-                                            <div class="completed-label">Выполнено:</div>
-                                            <div class="completed-list">
-                                                ${Object.entries(protocol.done)
-                                                    .map(([dept, date]) => {
-                                                        const formattedDate = new Date(date).toLocaleDateString();
-                                                        return `<div class="completed-item">${dept} (${formattedDate})</div>`;
-                                                    })
-                                                    .join('')}
-                                            </div>
-                                        </div>
-                                    `;
-                                }
-
-                                html += `
-                                    <div class="protocol-item" data-id="${protocol._id}">
-                                        <div class="protocol-info">
-                                            <div class="protocol-date">${new Date(protocol.date).toLocaleDateString()}</div>
-                                            <div class="protocol-text">${protocol.text}</div>
-                                            ${completedByHtml}
-                                        </div>
-                                        <div class="protocol-actions">
-                                            <button class="archive-btn" data-id="${protocol._id}">Архивировать</button>
-                                        </div>
-                                    </div>
-                                `;
-                            }
-                        });
-
-                        if (html === '') {
-                            html = '<div class="no-data">Нет активных протоколов</div>';
-                        }
-
-                        protocolsList.innerHTML = '<h3>Список протоколов</h3>' + html;
-
-                        // Обработчики кнопок архивирования остаются без изменений
-                        document.querySelectorAll('.archive-btn').forEach(btn => {
-                            btn.addEventListener('click', async function() {
-                                const protocolId = this.dataset.id;
-                                const protocolItem = this.closest('.protocol-item');
-
-                                if (confirm('Вы уверены, что хотите архивировать этот протокол?')) {
-                                    try {
-                                        const result = await api.archiveProtocol(protocolId);
-
-                                        if (result.status === 'success') {
-                                            showNotification('✓ Протокол архивирован', 'success');
-                                            protocolItem.remove();
-                                        } else {
-                                            throw new Error(result.message || 'Ошибка архивирования');
-                                        }
-                                    } catch (error) {
-                                        console.error('Ошибка:', error);
-                                        showNotification(error.message || 'Ошибка архивирования', 'error');
-                                    }
-                                }
-                            });
-                        });
-                    } else {
-                        protocolsList.innerHTML = '<h3>Список протоколов</h3><div class="no-data">Нет активных протоколов</div>';
-                    }
-                } else {
-                    throw new Error(result.message || 'Ошибка загрузки протоколов');
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки протоколов:', error);
-                protocolsList.innerHTML = `
-                    <div class="error">
-                        Ошибка загрузки протоколов
-                        <div class="error-detail">${error.message}</div>
-                    </div>
-                `;
-            }
-        }
-    }
-
-    // Инициализация формы распоряжений
-    function initOrderForm() {
-        const orderForm = document.getElementById("orderForm");
-        const ordersList = document.getElementById("ordersList");
-
-        // Загрузка списка распоряжений
-        loadOrders();
-
-        // Обработка отправки формы
-        orderForm.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            submitBtn.classList.add('loading');
-
-            try {
-                const formData = new FormData(orderForm);
-                const data = {
-                    date: formData.get('date'),
-                    num: formData.get('num'),
-                    text: formData.get('text'),
-                    csrfmiddlewaretoken: csrfToken
-                };
-
-                const result = await api.addOrder(data);
-
-                if (result.status === 'success') {
-                    showNotification('✓ Распоряжение успешно добавлено', 'success');
-                    orderForm.reset();
-                    loadOrders();
-                } else {
-                    throw new Error(result.message || 'Ошибка добавления распоряжения');
-                }
-            } catch (error) {
-                console.error('Ошибка:', error);
-                showNotification(error.message || 'Ошибка при добавлении распоряжения', 'error');
-            } finally {
-                submitBtn.classList.remove('loading');
-            }
-        });
-
-        // Функция загрузки протоколов
-        async function loadOrders() {
-            ordersList.innerHTML = '<div class="loading">Загрузка данных...</div>';
-
-            try {
-                const result = await api.getOrders();
-
-                if (result.status === 'success') {
-                    if (result.orders && result.orders.length > 0) {
-                        let html = '';
-                        result.orders.forEach(order => {
-                            if (!order.archived) {
-                                // Формируем список выполненных служб
-                                let completedByHtml = '<div class="order-completed">Не выполнено</div>';
-                                if (order.done && Object.keys(order.done).length > 0) {
-                                    completedByHtml = `
-                                        <div class="order-completed">
-                                            <div class="completed-label">Выполнено:</div>
-                                            <div class="completed-list">
-                                                ${Object.entries(order.done)
-                                                    .map(([dept, date]) => {
-                                                        const formattedDate = new Date(date).toLocaleDateString();
-                                                        return `<div class="completed-item">${dept} (${formattedDate})</div>`;
-                                                    })
-                                                    .join('')}
-                                            </div>
-                                        </div>
-                                    `;
-                                }
-
-                                html += `
-                                    <div class="order-item" data-id="${order._id}">
-                                        <div class="order-info">
-                                            <div class="order-num">№${order.num}</div>
-                                            <div class="order-date">${new Date(order.date).toLocaleDateString()}</div>
-                                            <div class="order-text">${order.text}</div>
-                                            ${completedByHtml}
-                                        </div>
-                                        <div class="order-actions">
-                                            <button class="archive-btn" data-id="${order._id}">Архивировать</button>
-                                        </div>
-                                    </div>
-                                `;
-                            }
-                        });
-
-                        if (html === '') {
-                            html = '<div class="no-data">Нет активных распоряжений</div>';
-                        }
-
-                        ordersList.innerHTML = '<h3>Список распоряжений (приказов)</h3>' + html;
-
-                        document.querySelectorAll('.archive-btn').forEach(btn => {
-                            btn.addEventListener('click', async function() {
-                                const orderId = this.dataset.id;
-                                const orderItem = this.closest('.order-item');
-
-                                if (confirm('Вы уверены, что хотите архивировать это распоряжение?')) {
-                                    try {
-                                        const result = await api.archiveOrder(orderId);
-
-                                        if (result.status === 'success') {
-                                            showNotification('✓ Распоряжение архивировано', 'success');
-                                            orderItem.remove();
-                                        } else {
-                                            throw new Error(result.message || 'Ошибка архивирования');
-                                        }
-                                    } catch (error) {
-                                        console.error('Ошибка:', error);
-                                        showNotification(error.message || 'Ошибка архивирования', 'error');
-                                    }
-                                }
-                            });
-                        });
-                    } else {
-                        ordersList.innerHTML = '<h3>Список распоряжений (приказов)</h3><div class="no-data">Нет активных распоряжений</div>';
-                    }
-                } else {
-                    throw new Error(result.message || 'Ошибка загрузки распоряжений');
-                }
-            } catch (error) {
-                console.error('Ошибка загрузки распоряжений:', error);
-                ordersList.innerHTML = `
-                    <div class="error">
-                        Ошибка загрузки распоряжений
-                        <div class="error-detail">${error.message}</div>
-                    </div>
-                `;
-            }
-        }
+        const { html, init } = await ordersManager.renderOrderForm(AppState.currentUser.isAdmin);
+        appContainer.innerHTML = html;
+        init();
     }
 
 

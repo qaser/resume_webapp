@@ -7,7 +7,10 @@
     --text: var(--tg-theme-text-color, #1e293b);
     --hint: var(--tg-theme-hint-color, #64748b);
     --link: var(--tg-theme-link-color, #3b82f6);
-    --border: var(--tg-theme-border-color, grey);
+
+    /* Устанавливаем фиксированный серый цвет */
+    --border: #cbd5e1;
+
     --radius: 16px;
     --radius-sm: 12px;
     --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
@@ -28,7 +31,7 @@
 /* Темная тема */
 @media (prefers-color-scheme: dark) {
     :root {
-        --border: var(--tg-theme-border-color, rgba(255, 255, 255, 0.5));
+        /* Убираем переопределение border */
         --shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
 
         /* Более насыщенные цвета для темной темы */
