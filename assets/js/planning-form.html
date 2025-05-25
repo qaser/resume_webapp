@@ -1,30 +1,25 @@
 <div class="form-container">
     <h2>Планирование</h2>
     <form id="planningForm">
+        {{#if isAdmin}}
         <div class="form-group">
             <label for="planServiceSelect">Служба</label>
             <select id="planServiceSelect" required>
-                <option value="">-- Выберите --</option>
-                <option value="КС-1,4">КС-1,4</option>
-                <option value="КС-2,3">КС-2,3</option>
-                <option value="КС-5,6">КС-5,6</option>
-                <option value="КС-7,8">КС-7,8</option>
-                <option value="КС-9,10">КС-9,10</option>
-                <option value="АиМО">АиМО</option>
-                <option value="ЭВС">ЭВС</option>
-                <option value="ЛЭС">ЛЭС</option>
-                <option value="СЗК">СЗК</option>
-                <option value="Связь">Связь</option>
-                <option value="ВПО">ВПО</option>
+                {{serviceOptions}}
             </select>
         </div>
+        {{else}}
+        <div class="form-group">
+            <label>Служба</label>
+            <div class="current-department">{{currentDepartment}}</div>
+            <input type="hidden" id="planServiceSelect" value="{{currentDepartment}}">
+        </div>
+        {{/if}}
 
         <div class="form-group">
             <label for="planYearSelect">Год планирования</label>
             <select id="planYearSelect">
-                <option value="2025">2025</option>
-                <option value="2026">2026</option>
-                <option value="2027">2027</option>
+                {{yearOptions}}
             </select>
         </div>
 

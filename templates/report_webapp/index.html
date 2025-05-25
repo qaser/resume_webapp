@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8" />
   <title>Подготовка к совещанию</title>
+    <link rel="shortcut icon" type="image/png" href="{% static 'img/favicon.ico' %}">
     <link rel="stylesheet" href="{% static 'css/variables.css'%}">
     <link rel="stylesheet" href="{% static 'css/base.css'%}">
     <link rel="stylesheet" href="{% static 'css/animations.css'%}">
@@ -19,7 +20,15 @@
 </head>
 <body>
   <div class="main-menu">
-    <h1>Система отчетности</h1>
+    <div class="header-container">
+        <h1>Планёрка™</h1>
+        <div id="logoutBtn" class="logout-button">
+            <span id="currentDepartment"></span>
+            <svg class="logout-icon" viewBox="0 0 24 24">
+                <path fill="currentColor" d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/>
+            </svg>
+        </div>
+    </div>
     <div class="menu-buttons">
       <button id="dataInputBtn" class="menu-button">Ввод данных</button>
       <button id="dataViewBtn" class="menu-button">Просмотр данных</button>
@@ -42,7 +51,15 @@
   <script>
     const csrfToken = "{{ csrf_token }}";
     const staticUrl = "{% static '' %}";
+
+    // Проверка аутентификации при загрузке
+    const department = localStorage.getItem("department");
+    const token = localStorage.getItem("auth_token");
+
+    if (!department || !token) {
+      window.location.href = "{% url 'login' %}";
+    }
   </script>
-  <script type="module" src="{% static 'js/main.js' %}"></script>
+    <script type="module" src="{% static 'js/main.js' %}"></script>
 </body>
 </html>

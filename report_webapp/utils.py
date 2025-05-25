@@ -17,9 +17,26 @@ remarks = db['remarks']
 leaks = db['leaks']
 protocols = db['protocols']
 orders = db['orders']
+users = db['users']
+
+
+def authenticate_user(department, password):
+    user = users.find_one({'department': department})
+    if user and user.get('password') == password:
+        return user
+    return None
 
 
 '''
+структура для users:
+{
+    '_id': порядковый номер,
+    'department': наименование службы,
+    'is_admin': True/False
+    'password': пароль для входа,
+}
+
+
 структура данных orders:
 {
     '_id': порядковый номер,

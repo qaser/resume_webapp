@@ -1,10 +1,12 @@
 import json
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timedelta
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
-from report_webapp.utils import reports, plans, kss, remarks, leaks, protocols, orders
+from report_webapp.utils import reports, plans, kss, remarks, leaks, protocols, orders, authenticate_user, users
+from django.http import JsonResponse
+
 
 # Словарь для преобразования технических имен в читаемые
 FIELD_NAMES_MAPPING = {
@@ -607,3 +609,21 @@ def mark_order_done(request, order_id):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
+
+
+@csrf_exempt
+def authenticate_view(request):
+    if request.method == "POST":
+        body = json.loads(request.body)
+        department = body.get("department")
+        password = body.get("password")
+        user = authenticate_user(department, password)
+        if user:
+            return JsonResponse({"token": "valid"}, status=200)
+        else:
+            return JsonResponse({"error": "Invalid credentials"}, status=401)
+
+
+def departments_list(request):
+    deps = users.distinct("department")
+    return JsonResponse(list(deps), safe=False)

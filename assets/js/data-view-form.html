@@ -1,5 +1,7 @@
 <div class="view-container">
     <h2>Просмотр данных</h2>
+
+    <!-- Для админа показываем кнопки выбора службы -->
     <div class="service-buttons" id="serviceButtons">
         <button class="service-btn" data-service="КС-1,4">КС-1,4</button>
         <button class="service-btn" data-service="КС-2,3">КС-2,3</button>
@@ -13,5 +15,11 @@
         <button class="service-btn" data-service="Связь">Связь</button>
         <button class="service-btn" data-service="ВПО">ВПО</button>
     </div>
+
+    <!-- Для обычных пользователей показываем заголовок с их службой -->
+    <div id="currentDepartmentInfo" style="display: none;">
+        <h3>Данные службы: <span id="currentDepartmentName"></span></h3>
+    </div>
+
     <div id="dataDisplay"></div>
 </div>

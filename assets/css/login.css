@@ -1,0 +1,73 @@
+/* Стили для страницы входа */
+.login-container {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 32px;
+    box-shadow: var(--shadow);
+    max-width: 400px;
+    margin: 50px auto;
+    text-align: center;
+}
+
+.login-container h1 {
+    font-size: 1.5rem;
+    margin-bottom: 24px;
+    color: var(--text);
+    position: relative;
+    padding-bottom: 12px;
+}
+
+.login-container h1::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 80px;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 3px;
+}
+
+.remember-me {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: var(--text);
+    cursor: pointer;
+}
+
+.remember-me input {
+    width: auto;
+    margin: 0;
+}
+
+@media (max-width: 480px) {
+    .login-container {
+        padding: 24px 16px;
+        margin: 20px auto;
+    }
+}
+
+
+.error-message {
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  background-color: #f8d7da;
+  border-radius: 0.25rem;
+  border: 1px solid #f5c6cb;
+  display: none;
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.error-message {
+  animation: fadeIn 0.3s ease-out;
+}

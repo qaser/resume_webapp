@@ -1,223 +1,56 @@
+import ApiService from './api.js';
+
 const scriptPath = document.currentScript?.src || new URL(import.meta.url).pathname;
 const basePath = scriptPath.substring(0, scriptPath.lastIndexOf('/') + 1);
 
-// API service
-const api = {
-    // Отправка отчета
-    async submitReport(data) {
-        const response = await fetch('/api/reports/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-            },
-            body: JSON.stringify(data)
-        });
-        return await response.json();
-    },
-
-    // Получение отчетов по службе
-    async getReports(service) {
-        const response = await fetch(`/api/reports/?service=${encodeURIComponent(service)}&all=true`);
-        return await response.json();
-    },
-
-    // Получение планов
-    async getPlans(department, year) {
-        const response = await fetch(`/api/plans/?department=${encodeURIComponent(department)}&year=${year}`);
-        return await response.json();
-    },
-
-    // Получение данных по утечкам
-    async getLeaks(department, year) {
-        const response = await fetch(`/api/leaks/?department=${encodeURIComponent(department)}&year=${year}`);
-        return await response.json();
-    },
-
-    // Получение замечаний
-    async getRemarks(department, year) {
-        const response = await fetch(`/api/remarks/?department=${encodeURIComponent(department)}&year=${year}`);
-        return await response.json();
-    },
-
-    // Получение данных по КСС (только для ЛЭС)
-    async getKss(year) {
-        const response = await fetch(`/api/kss/?year=${year}`);
-        return await response.json();
-    },
-
-    // Сохранение плана
-    async savePlan(data) {
-        const response = await fetch('/api/planning/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-            },
-            body: JSON.stringify(data)
-        });
-        return await response.json();
-    },
-
-    async getProtocols() {
-        const response = await fetch('/api/protocols/');
-        return await response.json();
-    },
-
-    // Добавление протокола
-    async addProtocol(data) {
-        const response = await fetch('/api/protocols/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-            },
-            body: JSON.stringify(data)
-        });
-        return await response.json();
-    },
-
-    // Архивирование протокола
-    async archiveProtocol(id) {
-        const response = await fetch(`/api/protocols/${id}/archive/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrfToken,
-            }
-        });
-        return await response.json();
-    },
-
-    async updateProtocol(protocolId, service, doneDate) {
-        const response = await fetch(`/api/protocols/${protocolId}/done/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-            },
-            body: JSON.stringify({ service, done_date: doneDate })
-        });
-        return await response.json();
-    },
-
-    async getOrders() {
-        const response = await fetch('/api/orders/');
-        return await response.json();
-    },
-
-    // Добавление распоряжений
-    async addOrder(data) {
-        const response = await fetch('/api/orders/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-            },
-            body: JSON.stringify(data)
-        });
-        return await response.json();
-    },
-
-    // Архивирование распоряжения
-    async archiveOrder(id) {
-        const response = await fetch(`/api/orders/${id}/archive/`, {
-            method: 'POST',
-            headers: {
-                'X-CSRFToken': csrfToken,
-            }
-        });
-        return await response.json();
-    },
-
-    async updateOrder(orderId, service, doneDate) {
-        const response = await fetch(`/api/orders/${orderId}/done/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-            },
-            body: JSON.stringify({ service, done_date: doneDate })
-        });
-        return await response.json();
-    }
-};
+const api = new ApiService(csrfToken);
 
 document.addEventListener('DOMContentLoaded', function() {
     const appContainer = document.getElementById("app-container");
     const dataInputBtn = document.getElementById("dataInputBtn");
-    const dataViewBtn = document.getElementById("dataViewBtn");
-    const dataPlanBtn = document.getElementById("dataPlanBtn");
-    const dataProtocolBtn = document.getElementById("dataProtocolBtn");
-    const dataOuterRemarksBtn = document.getElementById("dataOuterRemarksBtn");
-    const dataOrderlBtn = document.getElementById("dataOrderlBtn");
+    const currentDepartment = localStorage.getItem("department");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const currentDepartmentEl = document.getElementById("currentDepartment");
+
+    if (currentDepartment && logoutBtn && currentDepartmentEl) {
+    currentDepartmentEl.textContent = currentDepartment;
+
+    logoutBtn.addEventListener("click", () => {
+        // Очищаем localStorage
+        localStorage.removeItem("department");
+        localStorage.removeItem("auth_token");
+
+        // Перенаправляем на страницу входа
+        window.location.href = "/login";
+    });
+    } else if (logoutBtn) {
+        logoutBtn.style.display = "none";
+    }
 
     // Инициализация приложения
     initApp();
 
     function initApp() {
-        // Обработчики для кнопок меню (остается без изменений)
-        dataInputBtn.addEventListener("click", () => {
-            dataInputBtn.classList.add("active");
-            dataViewBtn.classList.remove("active");
-            dataPlanBtn.classList.remove("active");
-            dataProtocolBtn.classList.remove("active");
-            dataOuterRemarksBtn.classList.remove("active");
-            dataOrderlBtn.classList.remove("active");
-            renderDataInputForm();
-        });
+        const menuButtons = {
+            dataInputBtn: renderDataInputForm,
+            dataViewBtn: renderDataViewForm,
+            dataPlanBtn: renderPlanningForm,
+            dataProtocolBtn: renderProtocolForm,
+            dataOuterRemarksBtn: () => {},
+            dataOrderlBtn: renderOrderForm,
+        };
 
-        dataViewBtn.addEventListener("click", () => {
-            dataViewBtn.classList.add("active");
-            dataInputBtn.classList.remove("active");
-            dataPlanBtn.classList.remove("active");
-            dataProtocolBtn.classList.remove("active");
-            dataOuterRemarksBtn.classList.remove("active");
-            dataOrderlBtn.classList.remove("active");
-            renderDataViewForm();
-        });
+        const allButtons = Object.keys(menuButtons).map(id => document.getElementById(id));
 
-        dataPlanBtn.addEventListener("click", () => {
-            dataPlanBtn.classList.add("active");
-            dataInputBtn.classList.remove("active");
-            dataViewBtn.classList.remove("active");
-            dataProtocolBtn.classList.remove("active");
-            dataOuterRemarksBtn.classList.remove("active");
-            dataOrderlBtn.classList.remove("active");
-            renderPlanningForm();
-        });
-
-        dataProtocolBtn.addEventListener("click", () => {
-            dataProtocolBtn.classList.add("active");
-            dataInputBtn.classList.remove("active");
-            dataViewBtn.classList.remove("active");
-            dataPlanBtn.classList.remove("active");
-            dataOuterRemarksBtn.classList.remove("active");
-            dataOrderlBtn.classList.remove("active");
-            renderProtocolForm();
-        });
-
-        dataOuterRemarksBtn.addEventListener("click", () => {
-            dataOuterRemarksBtn.classList.add("active");
-            dataInputBtn.classList.remove("active");
-            dataViewBtn.classList.remove("active");
-            dataPlanBtn.classList.remove("active");
-            dataProtocolBtn.classList.remove("active");
-            dataOrderlBtn.classList.remove("active");
-            // renderOrderForm();
-        });
-
-        dataOrderlBtn.addEventListener("click", () => {
-            dataOrderlBtn.classList.add("active");
-            dataInputBtn.classList.remove("active");
-            dataViewBtn.classList.remove("active");
-            dataPlanBtn.classList.remove("active");
-            dataProtocolBtn.classList.remove("active");
-            dataOuterRemarksBtn.classList.remove("active");
-            renderOrderForm();
-        });
-
-        // По умолчанию показываем форму ввода
-        dataInputBtn.click();
+        for (const [btnId, renderFn] of Object.entries(menuButtons)) {
+            const button = document.getElementById(btnId);
+            button.addEventListener("click", () => {
+                allButtons.forEach(btn => btn.classList.remove("active"));
+                button.classList.add("active");
+                renderFn();
+            });
+        }
+        document.getElementById("dataInputBtn").click();
     }
 
     async function loadTemplate(templateName, data = {}) {
@@ -227,7 +60,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
             let html = await response.text();
 
-            // Простая замена переменных в шаблоне (опционально)
             for (const [key, value] of Object.entries(data)) {
                 html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
             }
@@ -239,25 +71,65 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // Функция для отображения формы ввода данных (остается без изменений)
     async function renderDataInputForm() {
         appContainer.innerHTML = await loadTemplate('data-input-form');
+
+        const currentUserDepartment = localStorage.getItem("department");
+        const isAdmin = currentUserDepartment === "Админ";
+
+        // Для не-админов показываем информацию о текущей службе
+        if (!isAdmin) {
+            const currentServiceInfo = document.getElementById("currentServiceInfo");
+            const currentServiceValue = document.getElementById("currentServiceValue");
+
+            if (currentServiceInfo && currentServiceValue) {
+                currentServiceInfo.style.display = "block";
+                currentServiceValue.textContent = currentUserDepartment;
+            }
+        }
+
         initDataInputForm();
     }
 
-    // Функция для отображения формы просмотра данных (остается без изменений)
     async function renderDataViewForm() {
         appContainer.innerHTML = await loadTemplate('data-view-form');
 
-        // Добавляем обработчик для кнопок
-        document.querySelectorAll('.service-btn').forEach(btn => {
-            btn.addEventListener('click', async function() {
-                document.querySelectorAll('.service-btn').forEach(b => b.classList.remove('active'));
-                this.classList.add('active');
-                appContainer.dataset.currentDepartment = this.dataset.service;
-                await loadServiceData(this.dataset.service);
+        const currentUserDepartment = localStorage.getItem("department");
+        const isAdmin = currentUserDepartment === "Админ";
+        const serviceButtonsContainer = document.querySelector('.service-buttons');
+        const currentDepartmentInfo = document.getElementById('currentDepartmentInfo');
+        const currentDepartmentName = document.getElementById('currentDepartmentName');
+
+        if (isAdmin) {
+            // Для админа скрываем блок с информацией о текущей службе
+            if (currentDepartmentInfo) currentDepartmentInfo.style.display = 'none';
+
+            // Оставляем кнопки выбора службы
+            document.querySelectorAll('.service-btn').forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    document.querySelectorAll('.service-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    appContainer.dataset.currentDepartment = this.dataset.service;
+                    await loadServiceData(this.dataset.service);
+                });
             });
-        });
+
+            // По умолчанию выбираем первую кнопку
+            const firstBtn = document.querySelector('.service-btn');
+            if (firstBtn) {
+                firstBtn.classList.add('active');
+                appContainer.dataset.currentDepartment = firstBtn.dataset.service;
+                await loadServiceData(firstBtn.dataset.service);
+            }
+        } else {
+            // Для обычных пользователей скрываем кнопки и показываем их службу
+            if (serviceButtonsContainer) serviceButtonsContainer.style.display = 'none';
+            if (currentDepartmentInfo) currentDepartmentInfo.style.display = 'block';
+            if (currentDepartmentName) currentDepartmentName.textContent = currentUserDepartment;
+
+            appContainer.dataset.currentDepartment = currentUserDepartment;
+            await loadServiceData(currentUserDepartment);
+        }
     }
 
     function initDataInputForm() {
@@ -267,8 +139,16 @@ document.addEventListener('DOMContentLoaded', function() {
         const serviceButtonsContainer = document.getElementById("serviceButtonsContainer");
         const serviceButtons = document.querySelectorAll("#serviceButtons .service-btn");
 
+        const currentUserDepartment = localStorage.getItem("department");
+        const isAdmin = currentUserDepartment === "Админ";
+
         let currentType = null;
-        let currentService = null;
+        let currentService = isAdmin ? null : currentUserDepartment;
+
+        // Скрываем выбор службы для не-админов
+        if (!isAdmin) {
+            serviceButtonsContainer.style.display = "none";
+        }
 
         typeButtons.forEach(button => {
             button.addEventListener("click", async () => {
@@ -277,76 +157,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 currentType = button.dataset.type;
                 document.getElementById("typeError").style.display = "none";
 
-                // Показываем выбор службы
-                serviceButtonsContainer.style.display = "block";
-                reportForm.style.display = "none";
-                currentService = null;
-
-                // Сбрасываем выбор службы
-                serviceButtons.forEach(btn => btn.classList.remove("active"));
-            });
-        });
-
-        serviceButtons.forEach(button => {
-            button.addEventListener("click", async () => {
-                serviceButtons.forEach(btn => btn.classList.remove("active"));
-                button.classList.add("active");
-                currentService = button.dataset.service;
-                document.getElementById("serviceError").style.display = "none";
-
-                try {
-                    // Загружаем соответствующий шаблон
-                    dynamicFields.innerHTML = await loadTemplate(currentType);
-
-                    // Если это weekly - загружаем протоколы и дополнительные поля
-                    if (currentType === 'weekly') {
-
-                        // Загружаем поле утечек отдельно
-                        const leaksHtml = await loadTemplate('leaks-field');
-                        dynamicFields.insertAdjacentHTML('beforeend', leaksHtml);
-
-                        // Показываем поле утечек для всех, кроме ВПО и Связь
-                        const leaksSection = document.querySelector('.form-group-leak');
-                        if (leaksSection) {
-                            const hideForServices = ['ВПО', 'Связь'];
-                            leaksSection.style.display = hideForServices.includes(currentService) ? 'none' : 'block';
-                        }
-
-                        // Загружаем поле КСС отдельно
-                        const kssHtml = await loadTemplate('kss-field');
-                        dynamicFields.insertAdjacentHTML('beforeend', kssHtml);
-
-                        // Показываем поле КСС только для ЛЭС
-                        const kssSection = document.querySelector('.form-group-kss');
-                        if (kssSection) {
-                            kssSection.style.display = currentService === 'ЛЭС' ? 'block' : 'none';
-                        }
-
-                        await loadProtocolsForReport(currentService);
+                // Для админа показываем выбор службы, для остальных сразу показываем форму
+                if (isAdmin) {
+                    serviceButtonsContainer.style.display = "block";
+                    reportForm.style.display = "none";
+                    currentService = null;
+                    serviceButtons.forEach(btn => btn.classList.remove("active"));
+                } else {
+                    try {
+                        dynamicFields.innerHTML = await loadTemplate(currentType);
+                        await loadAdditionalFields(currentType, currentService);
+                        reportForm.style.display = "block";
+                    } catch (error) {
+                        console.error('Error loading form:', error);
+                        dynamicFields.innerHTML = `<p>Error loading form: ${error.message}</p>`;
                     }
-
-                    reportForm.style.display = "block";
-
-                    // Инициализация обработчиков для полей ввода
-                    const allInputs = dynamicFields.querySelectorAll("input[type='number']");
-                    allInputs.forEach(input => {
-                        if (input.name.includes("undone")) {
-                            input.addEventListener("input", () => {
-                                const container = input.closest(".form-group-section");
-                                const reasonField = container.querySelector(".reason-field");
-                                if (!reasonField) return;
-
-                                const val = parseInt(input.value.trim());
-                                reasonField.style.display = val > 0 ? "block" : "none";
-                            });
-                        }
-                    });
-                } catch (error) {
-                    console.error('Error loading form:', error);
-                    dynamicFields.innerHTML = `<p>Error loading form: ${error.message}</p>`;
                 }
             });
         });
+
+        // Обработчик выбора службы (только для админа)
+        if (isAdmin) {
+            serviceButtons.forEach(button => {
+                button.addEventListener("click", async () => {
+                    serviceButtons.forEach(btn => btn.classList.remove("active"));
+                    button.classList.add("active");
+                    currentService = button.dataset.service;
+                    document.getElementById("serviceError").style.display = "none";
+
+                    try {
+                        dynamicFields.innerHTML = await loadTemplate(currentType);
+                        await loadAdditionalFields(currentType, currentService);
+                        reportForm.style.display = "block";
+                    } catch (error) {
+                        console.error('Error loading form:', error);
+                        dynamicFields.innerHTML = `<p>Error loading form: ${error.message}</p>`;
+                    }
+                });
+            });
+        }
 
         // Отправка формы
         reportForm.addEventListener("submit", async (e) => {
@@ -405,11 +254,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     setTimeout(() => {
                         // Сбрасываем форму к начальному состоянию
                         typeButtons.forEach(btn => btn.classList.remove("active"));
-                        serviceButtons.forEach(btn => btn.classList.remove("active"));
-                        serviceButtonsContainer.style.display = "none";
+                        if (isAdmin) {
+                            serviceButtons.forEach(btn => btn.classList.remove("active"));
+                            serviceButtonsContainer.style.display = "none";
+                        }
                         reportForm.style.display = "none";
                         currentType = null;
-                        currentService = null;
+                        currentService = isAdmin ? null : currentUserDepartment;
                     }, 1000);
                 } else {
                     throw new Error(result.message || 'Ошибка сохранения данных');
@@ -421,71 +272,48 @@ document.addEventListener('DOMContentLoaded', function() {
                 submitBtn.classList.remove('loading');
             }
         });
-    }
 
+        // Вынесем загрузку дополнительных полей в отдельную функцию
+        async function loadAdditionalFields(type, service) {
+            if (type === 'weekly') {
+                // Загружаем поле утечек отдельно
+                const leaksHtml = await loadTemplate('leaks-field');
+                dynamicFields.insertAdjacentHTML('beforeend', leaksHtml);
 
-    async function loadProtocolsForReport(service) {
-        const container = document.getElementById('protocolsContainer');
-        if (!container) return;
+                // Показываем поле утечек для всех, кроме ВПО и Связь
+                const leaksSection = document.querySelector('.form-group-leak');
+                if (leaksSection) {
+                    const hideForServices = ['ВПО', 'Связь'];
+                    leaksSection.style.display = hideForServices.includes(service) ? 'none' : 'block';
+                }
 
-        container.innerHTML = '<div class="loading">Загрузка мероприятий...</div>';
+                // Загружаем поле КСС отдельно
+                const kssHtml = await loadTemplate('kss-field');
+                dynamicFields.insertAdjacentHTML('beforeend', kssHtml);
 
-        try {
-            const response = await api.getProtocols();
-            if (response.status === 'success' && response.protocols.length > 0) {
-                let html = '';
+                // Показываем поле КСС только для ЛЭС
+                const kssSection = document.querySelector('.form-group-kss');
+                if (kssSection) {
+                    kssSection.style.display = service === 'ЛЭС' ? 'block' : 'none';
+                }
 
-                response.protocols.forEach(protocol => {
-                    if (!protocol.archived) {
-                        const isChecked = protocol.done && protocol.done[service];
-
-                        html += `
-                            <div class="protocol-item">
-                                <div class="protocol-info">
-                                    <div class="protocol-date">${new Date(protocol.date).toLocaleDateString()}</div>
-                                    <div class="protocol-text">${protocol.text}</div>
-                                    <div class="protocol-completed">
-                                        <div class="completed-label">${isChecked ? '✓ Выполнено вашей службой' : 'Не выполнено'}</div>
-                                        ${protocol.done && Object.keys(protocol.done).length > 0 ? `
-                                            <div class="completed-list">
-                                                ${Object.entries(protocol.done)
-                                                    .map(([dept, date]) =>
-                                                        `<div class="completed-item">${dept} (${new Date(date).toLocaleDateString()})</div>`
-                                                    ).join('')}
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                                <button class="protocol-action-btn ${isChecked ? 'done' : ''}"
-                                        data-id="${protocol._id}"
-                                        type="button">
-                                    ${isChecked ? '✓ Выполнено' : 'Отметить выполненным'}
-                                </button>
-                            </div>
-                        `;
-                    }
-                });
-
-                container.innerHTML = html || '<div class="no-data">Нет активных мероприятий</div>';
-
-                // Обработчики для кнопок протоколов
-                container.querySelectorAll('.protocol-action-btn').forEach(btn => {
-                    btn.addEventListener('click', function() {
-                        const isDone = this.classList.contains('done');
-                        this.classList.toggle('done');
-                        this.textContent = isDone ? 'Отметить выполненным' : '✓ Выполнено';
-
-                        // Обновляем статус в блоке информации
-                        const infoBlock = this.closest('.protocol-item').querySelector('.completed-label');
-                        infoBlock.textContent = isDone ? 'Не выполнено' : '✓ Выполнено вашей службой';
-                    });
-                });
-            } else {
-                container.innerHTML = '<div class="no-data">Нет активных мероприятий</div>';
+                // await loadProtocolsForReport(service);
             }
-        } catch (error) {
-            console.error('Ошибка загрузки протоколов:', error);
-            container.innerHTML = '<div class="error">Ошибка загрузки мероприятий</div>';
+
+            // Инициализация обработчиков для полей ввода
+            const allInputs = dynamicFields.querySelectorAll("input[type='number']");
+            allInputs.forEach(input => {
+                if (input.name.includes("undone")) {
+                    input.addEventListener("input", () => {
+                        const container = input.closest(".form-group-section");
+                        const reasonField = container.querySelector(".reason-field");
+                        if (!reasonField) return;
+
+                        const val = parseInt(input.value.trim());
+                        reasonField.style.display = val > 0 ? "block" : "none";
+                    });
+                }
+            });
         }
     }
 
@@ -686,12 +514,50 @@ document.addEventListener('DOMContentLoaded', function() {
     async function renderPlanningForm() {
         const currentYear = new Date().getFullYear();
         const years = [currentYear, currentYear + 1, currentYear + 2];
+        const currentUserDepartment = localStorage.getItem("department");
+        const isAdmin = currentUserDepartment === "Админ";
+
+        // Подготавливаем опции для служб
+        let serviceOptions = '';
+        if (isAdmin) {
+            serviceOptions = `
+                <option value="">-- Выберите службу --</option>
+                <option value="КС-1,4">КС-1,4</option>
+                <option value="КС-2,3">КС-2,3</option>
+                <option value="КС-5,6">КС-5,6</option>
+                <option value="КС-7,8">КС-7,8</option>
+                <option value="КС-9,10">КС-9,10</option>
+                <option value="АиМО">АиМО</option>
+                <option value="ЭВС">ЭВС</option>
+                <option value="ЛЭС">ЛЭС</option>
+                <option value="СЗК">СЗК</option>
+                <option value="Связь">Связь</option>
+                <option value="ВПО">ВПО</option>
+            `;
+        } else {
+            serviceOptions = `<option value="${currentUserDepartment}" selected>${currentUserDepartment}</option>`;
+        }
 
         appContainer.innerHTML = await loadTemplate('planning-form', {
-            yearOptions: years.map(year => `<option value="${year}">${year}</option>`).join('')
+            yearOptions: years.map(year => `<option value="${year}">${year}</option>`).join(''),
+            serviceOptions: serviceOptions,
+            currentDepartment: currentUserDepartment
         });
 
-        document.getElementById('planningForm').addEventListener('submit', async function(e) {
+        const form = document.getElementById('planningForm');
+        const serviceSelect = document.getElementById('planServiceSelect');
+
+        // Для не-админов заменяем select на отображение department
+        if (!isAdmin) {
+            const formGroup = serviceSelect.closest('.form-group');
+            formGroup.innerHTML = `
+                <label>Служба</label>
+                <div class="current-department">${currentUserDepartment}</div>
+                <input type="hidden" id="planServiceSelect" value="${currentUserDepartment}">
+            `;
+        }
+
+        form.addEventListener('submit', async function(e) {
             e.preventDefault();
             const submitBtn = e.target.querySelector('button[type="submit"]');
             submitBtn.classList.add('loading');
@@ -699,7 +565,7 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const formData = new FormData(this);
                 const data = {
-                    service: document.getElementById('planServiceSelect').value,
+                    service: isAdmin ? serviceSelect.value : currentUserDepartment,
                     year: document.getElementById('planYearSelect').value,
                     csrfmiddlewaretoken: csrfToken
                 };
@@ -711,17 +577,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 const result = await api.savePlan(data);
 
                 if (result.status === 'success') {
-                    showNotification('✓ Данные успешно сохранены', 'success');
+                    showNotification('✓ План успешно сохранён', 'success');
                     setTimeout(() => {
                         dataInputBtn.click();
                         renderDataInputForm();
                     }, 500);
                 } else {
-                    throw new Error(result.message || 'Ошибка сохранения данных');
+                    throw new Error(result.message || 'Ошибка сохранения плана');
                 }
             } catch (error) {
                 console.error('Ошибка:', error);
-                showNotification(error.message || 'Ошибка при сохранении данных', 'error');
+                showNotification(error.message || 'Ошибка при сохранении плана', 'error');
             } finally {
                 submitBtn.classList.remove('loading');
             }
