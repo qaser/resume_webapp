@@ -414,13 +414,13 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="data-section" data-type="${reportType}" data-index="${index}">
                         <div class="data-header">
                             <button class="nav-arrow prev-arrow" ${index === reportsList.length - 1 ? 'disabled' : ''}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
                                     <path d="M15 18l-6-6 6-6"/>
                                 </svg>
                             </button>
                             <h3>${type} на ${date}</h3>
                             <button class="nav-arrow next-arrow" ${index === 0 ? 'disabled' : ''}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
                                     <path d="M9 18l6-6-6-6"/>
                                 </svg>
                             </button>
