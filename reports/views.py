@@ -423,7 +423,7 @@ def handle_protocols(request):
             # Получаем только неархивированные протоколы
             queryset = list(protocols.find(
                 {'archived': {'$ne': True}},
-                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1}
+                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1, 'departments': 1}
             ).sort('date', 1))
 
             # Преобразуем ObjectId в строку и форматируем даты
@@ -433,6 +433,7 @@ def handle_protocols(request):
                     '_id': str(protocol['_id']),
                     'date': protocol['date'].isoformat(),
                     'text': protocol['text'],
+                    'departments': protocol['departments'],
                     'done': {}
                 }
 
@@ -460,6 +461,7 @@ def handle_protocols(request):
             protocol_data = {
                 'date': datetime.fromisoformat(data['date']),
                 'text': data['text'],
+                'departments': data['departments'],
                 'archived': False,
                 'created_at': datetime.now()
             }
@@ -501,7 +503,7 @@ def mark_protocol_done(request, protocol_id):
         try:
             data = json.loads(request.body)
             service = data.get('service')
-            done_date = datetime.fromisoformat(data.get('done_date'))
+            done_date = datetime.fromisoformat(data.get('done_date').replace('Z', '+00:00'))
 
             result = protocols.update_one(
                 {'_id': ObjectId(protocol_id)},
@@ -525,7 +527,7 @@ def handle_orders(request):
             # Получаем только неархивированные распоряжения
             queryset = list(orders.find(
                 {'archived': {'$ne': True}},
-                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1, 'num': 1}
+                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1, 'num': 1, 'departments': 1}
             ).sort('date', 1))
             # Преобразуем ObjectId в строку и форматируем даты
             formatted_orders = []
@@ -534,6 +536,7 @@ def handle_orders(request):
                     '_id': str(order['_id']),
                     'num': order['num'],
                     'date': order['date'].isoformat(),
+                    'departments': order['departments'],
                     'text': order['text'],
                     'done': {}
                 }
@@ -559,6 +562,7 @@ def handle_orders(request):
                 'date': datetime.fromisoformat(data['date']),
                 'text': data['text'],
                 'num': data['num'],
+                'departments': data['departments'],
                 'archived': False,
                 'created_at': datetime.now()
             }
@@ -575,7 +579,6 @@ def handle_orders(request):
 
 @csrf_exempt
 def archive_order(request, order_id):
-    print(orders.find_one({'_id': ObjectId(order_id)}))
     if request.method == 'POST':
         try:
             result = orders.update_one(
@@ -597,7 +600,7 @@ def mark_order_done(request, order_id):
         try:
             data = json.loads(request.body)
             service = data.get('service')
-            done_date = datetime.fromisoformat(data.get('done_date'))
+            done_date = datetime.fromisoformat(data.get('done_date').replace('Z', '+00:00'))
             result = orders.update_one(
                 {'_id': ObjectId(order_id)},
                 {'$set': {f'done.{service}': done_date}}

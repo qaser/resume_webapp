@@ -12,6 +12,14 @@
             <textarea id="protocolText" name="text" required></textarea>
         </div>
 
+        <div class="form-group">
+            <label>Выберите службы для исполнения</label>
+            <div class="service-buttons" id="serviceButtons">
+                {{services}}
+            </div>
+            <div class="error-message" id="serviceError" style="display: none;">Пожалуйста, выберите хотя бы одну службу</div>
+        </div>
+
         <button type="submit" class="submit-button">Добавить</button>
     </form>
 

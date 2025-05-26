@@ -138,3 +138,86 @@
     flex-direction: row;
     margin: 20px auto 0 auto
 }
+
+
+/* Стили для тегов служб */
+.order-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.order-tag {
+    padding: 4px 8px;
+    background-color: #e0e0e0;
+    border-radius: 12px;
+    font-size: 0.8em;
+    color: #555;
+}
+
+.order-tag.current {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    font-weight: bold;
+}
+
+/* Стили для кнопок */
+.order-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #eee;
+}
+
+.order-action-btn {
+    padding: 6px 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.order-action-btn.done {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border-color: #c8e6c9;
+}
+
+.archive-btn {
+    padding: 6px 12px;
+    background-color: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    color: #757575;
+    cursor: pointer;
+}
+
+/* Стили для формы выбора служб */
+/* .service-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+} */
+
+/* .service-btn {
+    padding: 8px 12px;
+    background-color: #f0f0f0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.service-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.service-btn.active {
+    background-color: #4CAF50;
+    color: white;
+    border-color: #4CAF50;
+} */

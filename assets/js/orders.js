@@ -3,11 +3,16 @@ export default class OrdersManager {
     constructor(api, csrfToken) {
         this.api = api;
         this.csrfToken = csrfToken;
+        this.services = [
+            'КС-1,4', 'КС-2,3', 'КС-5,6', 'КС-7,8', 'КС-9,10',
+            'АиМО', 'ЭВС', 'ЛЭС', 'СЗК', 'Связь', 'ВПО'
+        ];
     }
 
     async renderOrderForm(isAdmin) {
         const template = await this.loadTemplate('order-form', {
-            showForm: isAdmin
+            showForm: isAdmin,
+            services: this.services
         });
         return { html: template, init: () => this.initOrderForm(isAdmin) };
     }
@@ -21,8 +26,20 @@ export default class OrdersManager {
             if (!response.ok) throw new Error('Template not found');
 
             let html = await response.text();
+
+            // Обработка services отдельно
+            if (data.services) {
+                const servicesHtml = data.services.map(service =>
+                    `<button type="button" class="service-btn" data-service="${service}">${service}</button>`
+                ).join('');
+                html = html.replace('{{services}}', servicesHtml);
+            }
+
+            // Обработка остальных данных
             for (const [key, value] of Object.entries(data)) {
-                html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
+                if (key !== 'services') {
+                    html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
+                }
             }
 
             return html;
@@ -35,25 +52,46 @@ export default class OrdersManager {
     initOrderForm(isAdmin) {
         const orderForm = document.getElementById("orderForm");
         const ordersList = document.getElementById("ordersList");
+        const currentUserDepartment = localStorage.getItem("department");
 
-        // Для не-админов скрываем форму добавления
         if (!isAdmin && orderForm) {
             orderForm.style.display = 'none';
         }
 
-        // Обработка отправки формы (только для админов)
         if (isAdmin && orderForm) {
+            const serviceButtons = document.querySelectorAll('#serviceButtons .service-btn');
+            const selectedDepartments = new Set();
+
+            serviceButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    button.classList.toggle('active');
+                    const service = button.dataset.service;
+
+                    if (button.classList.contains('active')) {
+                        selectedDepartments.add(service);
+                    } else {
+                        selectedDepartments.delete(service);
+                    }
+                });
+            });
+
             orderForm.addEventListener("submit", async (e) => {
                 e.preventDefault();
                 const submitBtn = e.target.querySelector('button[type="submit"]');
                 submitBtn.classList.add('loading');
 
                 try {
+                    if (selectedDepartments.size === 0) {
+                        throw new Error("Не выбраны службы для выполнения");
+                    }
+
                     const formData = new FormData(orderForm);
                     const data = {
                         date: formData.get('date'),
                         num: formData.get('num'),
                         text: formData.get('text'),
+                        departments: Array.from(selectedDepartments),
                         csrfmiddlewaretoken: this.csrfToken
                     };
 
@@ -62,7 +100,9 @@ export default class OrdersManager {
                     if (result.status === 'success') {
                         this.showNotification('✓ Распоряжение успешно добавлено', 'success');
                         orderForm.reset();
-                        await this.loadOrders(ordersList);
+                        serviceButtons.forEach(btn => btn.classList.remove('active'));
+                        selectedDepartments.clear();
+                        await this.loadOrders(ordersList, isAdmin, currentUserDepartment);
                     } else {
                         throw new Error(result.message || 'Ошибка добавления распоряжения');
                     }
@@ -75,11 +115,10 @@ export default class OrdersManager {
             });
         }
 
-        // Загрузка списка распоряжений
-        this.loadOrders(ordersList);
+        this.loadOrders(ordersList, isAdmin, currentUserDepartment);
     }
 
-    async loadOrders(container) {
+    async loadOrders(container, isAdmin, currentUserDepartment) {
         container.innerHTML = '<div class="loading">Загрузка данных...</div>';
 
         try {
@@ -88,16 +127,22 @@ export default class OrdersManager {
             if (result.status === 'success') {
                 if (result.orders && result.orders.length > 0) {
                     let html = '';
+
                     result.orders.forEach(order => {
                         if (!order.archived) {
-                            html += this.renderOrderItem(order);
+                            // Для не-админов показываем только распоряжения для их службы
+                            if (!isAdmin && (!order.departments ||
+                                !order.departments.includes(currentUserDepartment))) {
+                                return;
+                            }
+                            html += this.renderOrderItem(order, isAdmin, currentUserDepartment);
                         }
                     });
 
                     container.innerHTML = '<h3>Список распоряжений (приказов)</h3>' +
                         (html || '<div class="no-data">Нет активных распоряжений</div>');
 
-                    this.initOrderActions(container);
+                    this.initOrderActions(container, isAdmin, currentUserDepartment);
                 } else {
                     container.innerHTML = '<h3>Список распоряжений (приказов)</h3><div class="no-data">Нет активных распоряжений</div>';
                 }
@@ -115,40 +160,71 @@ export default class OrdersManager {
         }
     }
 
-    renderOrderItem(order) {
-        let completedByHtml = '<div class="order-completed">Не выполнено</div>';
-        if (order.done && Object.keys(order.done).length > 0) {
-            completedByHtml = `
-                <div class="order-completed">
-                    <div class="completed-label">Выполнено:</div>
-                    <div class="completed-list">
-                        ${Object.entries(order.done)
-                            .map(([dept, date]) => {
-                                const formattedDate = new Date(date).toLocaleDateString();
-                                return `<div class="completed-item">${dept} (${formattedDate})</div>`;
-                            })
-                            .join('')}
-                    </div>
+    renderOrderItem(order, isAdmin, currentUserDepartment) {
+        // Рендерим службы как теги
+        const departmentsTags = order.departments && order.departments.length > 0
+            ? `
+                <div class="order-tags">
+                    ${order.departments.map(dept => {
+                        const isDone = order.done && order.done[dept];
+                        return `
+                            <span class="order-tag
+                                    ${dept === currentUserDepartment ? 'current' : ''}
+                                    ${isDone ? 'done' : ''}">
+                                ${dept}
+                            </span>
+                        `;
+                    }).join('')}
                 </div>
-            `;
-        }
+            `
+            : '';
+
+
+        // Статус выполнения для текущего пользователя
+        const isDoneForCurrentUser = order.done && order.done[currentUserDepartment];
+
+        // Кнопка выполнения (только для назначенных распоряжений)
+        const actionButton = !isAdmin &&
+            order.departments &&
+            order.departments.includes(currentUserDepartment)
+                ? `
+                    <button class="order-action-btn ${isDoneForCurrentUser ? 'done' : ''}"
+                            data-id="${order._id}">
+                        ${isDoneForCurrentUser ? 'Выполнено' : 'Отметить выполнение'}
+                    </button>
+                `
+                : '';
+
+        // Кнопка архивирования (только для админа)
+        const archiveButton = isAdmin
+            ? `
+                <button class="archive-btn" data-id="${order._id}">
+                    Архивировать
+                </button>
+            `
+            : '';
 
         return `
             <div class="order-item" data-id="${order._id}">
-                <div class="order-info">
+                <div class="order-header">
                     <div class="order-num">№${order.num}</div>
                     <div class="order-date">${new Date(order.date).toLocaleDateString()}</div>
-                    <div class="order-text">${order.text}</div>
-                    ${completedByHtml}
                 </div>
-                <div class="order-actions">
-                    <button class="archive-btn" data-id="${order._id}">Архивировать</button>
+
+                ${departmentsTags}
+
+                <div class="order-text">${order.text}</div>
+
+                <div class="order-footer">
+                    ${actionButton}
+                    ${archiveButton}
                 </div>
             </div>
         `;
     }
 
-    initOrderActions(container) {
+    initOrderActions(container, isAdmin, currentUserDepartment) {
+        // Обработка архивирования (для админов)
         container.querySelectorAll('.archive-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const orderId = btn.dataset.id;
@@ -171,6 +247,50 @@ export default class OrdersManager {
                 }
             });
         });
+
+        // Обработка отметки выполнения (для не-админов)
+        container.querySelectorAll('.order-action-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const orderId = btn.dataset.id;
+                const orderItem = btn.closest('.order-item');
+
+                try {
+                    const result = await this.api.updateOrder(
+                        orderId,
+                        currentUserDepartment,
+                        new Date().toISOString()
+                    );
+
+                    if (result.status === 'success') {
+                        this.showNotification('✓ Распоряжение отмечено выполненным', 'success');
+                        // Обновляем отображение распоряжения
+                        const order = await this.getOrderById(orderId);
+                        if (order) {
+                            const orderHtml = this.renderOrderItem(order, isAdmin, currentUserDepartment);
+                            orderItem.outerHTML = orderHtml;
+                        }
+                    } else {
+                        throw new Error(result.message || 'Ошибка обновления распоряжения');
+                    }
+                } catch (error) {
+                    console.error('Ошибка:', error);
+                    this.showNotification(error.message || 'Ошибка при обновлении распоряжения', 'error');
+                }
+            });
+        });
+    }
+
+    async getOrderById(orderId) {
+        try {
+            const result = await this.api.getOrders();
+            if (result.status === 'success' && result.orders) {
+                return result.orders.find(o => o._id === orderId);
+            }
+            return null;
+        } catch (error) {
+            console.error('Ошибка получения распоряжения:', error);
+            return null;
+        }
     }
 
     showNotification(message, type = 'success') {

@@ -3,11 +3,16 @@ export default class ProtocolsManager {
     constructor(api, csrfToken) {
         this.api = api;
         this.csrfToken = csrfToken;
+        this.services = [
+            'КС-1,4', 'КС-2,3', 'КС-5,6', 'КС-7,8', 'КС-9,10',
+            'АиМО', 'ЭВС', 'ЛЭС', 'СЗК', 'Связь', 'ВПО'
+        ];
     }
 
     async renderProtocolForm(isAdmin) {
         const template = await this.loadTemplate('protocol-form', {
-            showForm: isAdmin
+            showForm: isAdmin,
+            services: this.services
         });
         return { html: template, init: () => this.initProtocolForm(isAdmin) };
     }
@@ -21,8 +26,20 @@ export default class ProtocolsManager {
             if (!response.ok) throw new Error('Template not found');
 
             let html = await response.text();
+
+            // Обработка services отдельно
+            if (data.services) {
+                const servicesHtml = data.services.map(service =>
+                    `<button type="button" class="service-btn" data-service="${service}">${service}</button>`
+                ).join('');
+                html = html.replace('{{services}}', servicesHtml);
+            }
+
+            // Обработка остальных данных
             for (const [key, value] of Object.entries(data)) {
-                html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
+                if (key !== 'services') {
+                    html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
+                }
             }
 
             return html;
@@ -35,22 +52,45 @@ export default class ProtocolsManager {
     initProtocolForm(isAdmin) {
         const protocolForm = document.getElementById("protocolForm");
         const protocolsList = document.getElementById("protocolsList");
+        const currentUserDepartment = localStorage.getItem("department");
 
         if (!isAdmin && protocolForm) {
             protocolForm.style.display = 'none';
         }
 
         if (isAdmin && protocolForm) {
+            const serviceButtons = document.querySelectorAll('#serviceButtons .service-btn');
+            const selectedDepartments = new Set();
+
+            serviceButtons.forEach(button => {
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    button.classList.toggle('active');
+                    const service = button.dataset.service;
+
+                    if (button.classList.contains('active')) {
+                        selectedDepartments.add(service);
+                    } else {
+                        selectedDepartments.delete(service);
+                    }
+                });
+            });
+
             protocolForm.addEventListener("submit", async (e) => {
                 e.preventDefault();
                 const submitBtn = e.target.querySelector('button[type="submit"]');
                 submitBtn.classList.add('loading');
 
                 try {
+                    if (selectedDepartments.size === 0) {
+                        throw new Error("Не выбраны службы для выполнения");
+                    }
+
                     const formData = new FormData(protocolForm);
                     const data = {
                         date: formData.get('date'),
                         text: formData.get('text'),
+                        departments: Array.from(selectedDepartments),
                         csrfmiddlewaretoken: this.csrfToken
                     };
 
@@ -59,7 +99,9 @@ export default class ProtocolsManager {
                     if (result.status === 'success') {
                         this.showNotification('✓ Протокол успешно добавлен', 'success');
                         protocolForm.reset();
-                        await this.loadProtocols(protocolsList, isAdmin);
+                        serviceButtons.forEach(btn => btn.classList.remove('active'));
+                        selectedDepartments.clear();
+                        await this.loadProtocols(protocolsList, isAdmin, currentUserDepartment);
                     } else {
                         throw new Error(result.message || 'Ошибка добавления протокола');
                     }
@@ -72,10 +114,10 @@ export default class ProtocolsManager {
             });
         }
 
-        this.loadProtocols(protocolsList, isAdmin);
+        this.loadProtocols(protocolsList, isAdmin, currentUserDepartment);
     }
 
-    async loadProtocols(container, isAdmin) {
+    async loadProtocols(container, isAdmin, currentUserDepartment) {
         container.innerHTML = '<div class="loading">Загрузка данных...</div>';
 
         try {
@@ -87,14 +129,19 @@ export default class ProtocolsManager {
 
                     result.protocols.forEach(protocol => {
                         if (!protocol.archived) {
-                            html += this.renderProtocolItem(protocol, isAdmin);
+                            // Для не-админов показываем только протоколы для их службы
+                            if (!isAdmin && (!protocol.departments ||
+                                !protocol.departments.includes(currentUserDepartment))) {
+                                return;
+                            }
+                            html += this.renderProtocolItem(protocol, isAdmin, currentUserDepartment);
                         }
                     });
 
                     container.innerHTML = '<h3>Список протоколов</h3>' +
                         (html || '<div class="no-data">Нет активных протоколов</div>');
 
-                    this.initProtocolActions(container, isAdmin);
+                    this.initProtocolActions(container, isAdmin, currentUserDepartment);
                 } else {
                     container.innerHTML = '<h3>Список протоколов</h3><div class="no-data">Нет активных протоколов</div>';
                 }
@@ -112,42 +159,70 @@ export default class ProtocolsManager {
         }
     }
 
-    renderProtocolItem(protocol, isAdmin) {
-        const completedByHtml = protocol.done && Object.keys(protocol.done).length > 0
+    renderProtocolItem(protocol, isAdmin, currentUserDepartment) {
+        // Рендерим службы как теги с цветовой индикацией
+        const departmentsTags = protocol.departments && protocol.departments.length > 0
             ? `
-                <div class="protocol-completed">
-                    <div class="completed-label">Выполнено:</div>
-                    <div class="completed-list">
-                        ${Object.entries(protocol.done)
-                            .map(([dept, date]) => {
-                                const formattedDate = new Date(date).toLocaleDateString();
-                                return `<div class="completed-item">${dept} (${formattedDate})</div>`;
-                            })
-                            .join('')}
-                    </div>
+                <div class="protocol-tags">
+                    ${protocol.departments.map(dept => {
+                        const isDone = protocol.done && protocol.done[dept];
+                        return `
+                            <span class="protocol-tag
+                                    ${dept === currentUserDepartment ? 'current' : ''}
+                                    ${isDone ? 'done' : ''}">
+                                ${dept}
+                            </span>
+                        `;
+                    }).join('')}
                 </div>
             `
-            : '<div class="protocol-completed">Не выполнено</div>';
+            : '';
+
+        // Статус выполнения для текущего пользователя
+        const isDoneForCurrentUser = protocol.done && protocol.done[currentUserDepartment];
+
+        // Кнопка выполнения (только для назначенных протоколов)
+        const actionButton = !isAdmin &&
+            protocol.departments &&
+            protocol.departments.includes(currentUserDepartment)
+                ? `
+                    <button class="protocol-action-btn ${isDoneForCurrentUser ? 'done' : ''}"
+                            data-id="${protocol._id}">
+                        ${isDoneForCurrentUser ? 'Выполнено' : 'Отметить выполнение'}
+                    </button>
+                `
+                : '';
+
+        // Кнопка архивирования (только для админа)
+        const archiveButton = isAdmin
+            ? `
+                <button class="archive-btn" data-id="${protocol._id}">
+                    Архивировать
+                </button>
+            `
+            : '';
 
         return `
             <div class="protocol-item" data-id="${protocol._id}">
-                <div class="protocol-info">
-                    <div class="protocol-date">${new Date(protocol.date).toLocaleDateString()}</div>
-                    <div class="protocol-text">${protocol.text}</div>
-                    ${completedByHtml}
-                </div>
-                ${isAdmin ? `
-                    <div class="protocol-actions">
-                        <button class="archive-btn" data-id="${protocol._id}">Архивировать</button>
+                <div class="protocol-header">
+                    <div class="protocol-date">
+                        ${new Date(protocol.date).toLocaleDateString()}
                     </div>
-                ` : ''}
+                </div>
+
+                ${departmentsTags}
+
+                <div class="protocol-text">${protocol.text}</div>
+
+                <div class="protocol-footer">
+                    ${actionButton}
+                    ${archiveButton}
+                </div>
             </div>
         `;
     }
 
-    initProtocolActions(container, isAdmin) {
-        if (!isAdmin) return;
-
+    initProtocolActions(container, isAdmin, currentUserDepartment) {
         container.querySelectorAll('.archive-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const protocolId = btn.dataset.id;
@@ -170,6 +245,49 @@ export default class ProtocolsManager {
                 }
             });
         });
+
+        container.querySelectorAll('.protocol-action-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const protocolId = btn.dataset.id;
+                const protocolItem = btn.closest('.protocol-item');
+
+                try {
+                    const result = await this.api.updateProtocol(
+                        protocolId,
+                        currentUserDepartment,
+                        new Date().toISOString()
+                    );
+
+                    if (result.status === 'success') {
+                        this.showNotification('✓ Протокол отмечен выполненным', 'success');
+                        // Обновляем отображение протокола
+                        const protocol = await this.getProtocolById(protocolId);
+                        if (protocol) {
+                            const protocolHtml = this.renderProtocolItem(protocol, isAdmin, currentUserDepartment);
+                            protocolItem.outerHTML = protocolHtml;
+                        }
+                    } else {
+                        throw new Error(result.message || 'Ошибка обновления протокола');
+                    }
+                } catch (error) {
+                    console.error('Ошибка:', error);
+                    this.showNotification(error.message || 'Ошибка при обновлении протокола', 'error');
+                }
+            });
+        });
+    }
+
+    async getProtocolById(protocolId) {
+        try {
+            const result = await this.api.getProtocols();
+            if (result.status === 'success' && result.protocols) {
+                return result.protocols.find(p => p._id === protocolId);
+            }
+            return null;
+        } catch (error) {
+            console.error('Ошибка получения протокола:', error);
+            return null;
+        }
     }
 
     showNotification(message, type = 'success') {

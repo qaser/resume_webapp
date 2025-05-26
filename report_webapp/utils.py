@@ -55,6 +55,7 @@ def authenticate_user(department, password):
     'created_at': datetime,
     'date': требуемая дата исполнения,
     'text': текст мероприятия,
+    'departments': [список подразделений (служб) для выполнения протокола совещания]
     'done': {'КС-1,4': дата_выполнения},
     'archived': True/False
     'archived_at': datetime

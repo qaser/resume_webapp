@@ -48,18 +48,20 @@
         <path fill="currentColor" d="M8.59 16.59L13.17 12 8.59 7.41 10 6l6 6-6 6-1.41-1.41z"/>
     </symbol>
   </svg>
-  <script>
-    const csrfToken = "{{ csrf_token }}";
-    const staticUrl = "{% static '' %}";
+    <script>
+        const csrfToken = "{{ csrf_token }}";
+        const staticUrl = "{% static '' %}";
 
-    // Проверка аутентификации при загрузке
-    const department = localStorage.getItem("department");
-    const token = localStorage.getItem("auth_token");
+        // Проверка аутентификации при загрузке
+        const department = localStorage.getItem("department");
+        const token = localStorage.getItem("auth_token");
 
-    if (!department || !token) {
-      window.location.href = "{% url 'login' %}";
-    }
-  </script>
+        if (!department || !token) {
+        window.location.href = "{% url 'login' %}";
+        }
+    </script>
+    <script type="module" src="{% static 'js/data-input.js' %}"></script>
+    <script type="module" src="{% static 'js/data-view.js' %}"></script>
     <script type="module" src="{% static 'js/planning.js' %}"></script>
     <script type="module" src="{% static 'js/protocols.js' %}"></script>
     <script type="module" src="{% static 'js/orders.js' %}"></script>
