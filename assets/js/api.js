@@ -169,6 +169,45 @@ class ApiService {
 
         return data;
     }
+
+    async getFaults() {
+        const response = await fetch('/api/faults/');
+        return await response.json();
+    }
+
+    async addFault(data) {
+        const response = await fetch('/api/faults/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.csrfToken,
+            },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    }
+
+    async archiveFault(id) {
+        const response = await fetch(`/api/faults/${id}/archive/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': this.csrfToken,
+            }
+        });
+        return await response.json();
+    }
+
+    async markFaultDone(id) {
+        const response = await fetch(`/api/faults/${id}/done/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.csrfToken,
+            },
+            body: JSON.stringify({ done_date: new Date().toISOString() })
+        });
+        return await response.json();
+    }
 }
 
 // Экспортируем класс для использования в других файлах

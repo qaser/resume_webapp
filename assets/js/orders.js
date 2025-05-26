@@ -161,24 +161,27 @@ export default class OrdersManager {
     }
 
     renderOrderItem(order, isAdmin, currentUserDepartment) {
-        // Рендерим службы как теги
+        // Рендерим службы как теги только для админов или если это текущая служба пользователя
         const departmentsTags = order.departments && order.departments.length > 0
             ? `
                 <div class="order-tags">
                     ${order.departments.map(dept => {
-                        const isDone = order.done && order.done[dept];
-                        return `
-                            <span class="order-tag
-                                    ${dept === currentUserDepartment ? 'current' : ''}
-                                    ${isDone ? 'done' : ''}">
-                                ${dept}
-                            </span>
-                        `;
+                        // Показываем тег только если это админ или текущая служба пользователя
+                        if (isAdmin || dept === currentUserDepartment) {
+                            const isDone = order.done && order.done[dept];
+                            return `
+                                <span class="order-tag
+                                        ${dept === currentUserDepartment ? 'current' : ''}
+                                        ${isDone ? 'done' : ''}">
+                                    ${dept}
+                                </span>
+                            `;
+                        }
+                        return ''; // Для других служб не рендерим тег
                     }).join('')}
                 </div>
             `
             : '';
-
 
         // Статус выполнения для текущего пользователя
         const isDoneForCurrentUser = order.done && order.done[currentUserDepartment];

@@ -17,6 +17,9 @@ urlpatterns = [
     path('api/orders/', views.handle_orders, name='orders'),
     path('api/orders/<str:order_id>/archive/', views.archive_order, name='archive_order'),
     path('api/orders/<str:order_id>/done/', views.mark_order_done, name='mark_order_done'),
+    path('api/faults/', views.handle_faults, name='faults'),
+    path('api/faults/<str:fault_id>/archive/', views.archive_fault, name='archive_fault'),
+    path('api/faults/<str:fault_id>/done/', views.mark_fault_done, name='mark_fault_done'),
     path("api/authenticate/", views.authenticate_view),
     path("api/departments/", views.departments_list),
 ]

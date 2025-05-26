@@ -102,9 +102,8 @@
 }
 
 .protocol-tag.current {
-    background-color: #e3f2fd;
-    color: #1976d2;
-    font-weight: bold;
+    background-color: #e0e0e0;
+    color: #555;
 }
 
 .protocol-tag.done {

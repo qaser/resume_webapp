@@ -14,6 +14,7 @@
     <link rel="stylesheet" href="{% static 'css/data-view.css'%}">
     <link rel="stylesheet" href="{% static 'css/protocols.css'%}">
     <link rel="stylesheet" href="{% static 'css/orders.css'%}">
+    <link rel="stylesheet" href="{% static 'css/faults.css'%}">
     <link rel="stylesheet" href="{% static 'css/notifications.css'%}">
     <link rel="stylesheet" href="{% static 'css/responsive.css'%}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -34,7 +35,7 @@
       <button id="dataViewBtn" class="menu-button">Просмотр данных</button>
       <button id="dataPlanBtn" class="menu-button">Планирование</button>
       <button id="dataProtocolBtn" class="menu-button">Протоколы совещаний</button>
-      <button id="dataOuterRemarksBtn" class="menu-button">Устранение замечаний</button>
+      <button id="dataFaultsBtn" class="menu-button">Устранение замечаний</button>
       <button id="dataOrderlBtn" class="menu-button">Выполнение распоряжений</button>
     </div>
   </div>
@@ -60,6 +61,7 @@
         window.location.href = "{% url 'login' %}";
         }
     </script>
+    <script type="module" src="{% static 'js/faults.js' %}"></script>
     <script type="module" src="{% static 'js/data-input.js' %}"></script>
     <script type="module" src="{% static 'js/data-view.js' %}"></script>
     <script type="module" src="{% static 'js/planning.js' %}"></script>

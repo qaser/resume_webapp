@@ -18,6 +18,7 @@ leaks = db['leaks']
 protocols = db['protocols']
 orders = db['orders']
 users = db['users']
+faults = db['faults']
 
 
 def authenticate_user(department, password):
@@ -28,6 +29,20 @@ def authenticate_user(department, password):
 
 
 '''
+структура для faults:
+{
+    '_id': порядковый номер,
+    'department': наименование службы,
+    'type': ['Газнадзор', 'Ростехнадзор']
+    'text': описание замечания,
+    'date': datetime - дата до которой замечание нужно устранить,
+    'is_done': false/true,
+    'date_done': datetime - дата устранения замечания
+    'archived': True/False
+    'archived_at': datetime
+    'created_at': datetime
+}
+
 структура для users:
 {
     '_id': порядковый номер,

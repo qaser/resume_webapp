@@ -195,29 +195,41 @@
     cursor: pointer;
 }
 
-/* Стили для формы выбора служб */
-/* .service-buttons {
+/* Стили для тегов распоряжений */
+.order-tags {
     display: flex;
     flex-wrap: wrap;
-    gap: 8px;
-    margin-top: 8px;
-} */
-
-/* .service-btn {
-    padding: 8px 12px;
-    background-color: #f0f0f0;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: all 0.2s;
+    gap: 6px;
+    margin: 8px 0;
 }
 
-.service-btn:hover {
+.order-tag {
+    padding: 4px 8px;
     background-color: #e0e0e0;
+    border-radius: 12px;
+    font-size: 0.8em;
+    color: #555;
 }
 
-.service-btn.active {
-    background-color: #4CAF50;
-    color: white;
-    border-color: #4CAF50;
-} */
+.order-tag.current {
+    background-color: #e3f2fd;
+    color: #1976d2;
+    font-weight: bold;
+}
+
+.order-tag.done {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 600px) {
+    .order-tags {
+        gap: 4px;
+    }
+
+    .order-tag {
+        padding: 3px 6px;
+        font-size: 0.7em;
+    }
+}

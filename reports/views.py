@@ -4,7 +4,9 @@ from datetime import datetime, timedelta
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
-from report_webapp.utils import reports, plans, kss, remarks, leaks, protocols, orders, authenticate_user, users
+from report_webapp.utils import (reports, plans, kss, remarks,
+                                 leaks, protocols, orders, authenticate_user,
+                                 users, faults)
 from django.http import JsonResponse
 
 
@@ -630,3 +632,92 @@ def authenticate_view(request):
 def departments_list(request):
     deps = users.distinct("department")
     return JsonResponse(list(deps), safe=False)
+
+
+@csrf_exempt
+def handle_faults(request):
+    if request.method == 'GET':
+        try:
+            # Получаем только неархивированные распоряжения
+            queryset = list(faults.find(
+                {'archived': {'$ne': True}},
+                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'is_done': 1, 'num': 1, 'department': 1, 'type': 1, 'date_done': 1}
+            ).sort('date', 1))
+            # Преобразуем ObjectId в строку и форматируем даты
+            formatted_faults = []
+            for fault in queryset:
+                formatted = {
+                    '_id': str(fault['_id']),
+                    'date': fault['date'].isoformat(),
+                    'department': fault['department'],
+                    'type': fault['type'],
+                    'text': fault['text'],
+                    'is_done': fault['is_done'],
+                    'date_done': fault['date_done']
+                }
+                formatted_faults.append(formatted)
+            return JsonResponse({
+                'status': 'success',
+                'faults': formatted_faults
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            fault_data = {
+                'date': datetime.fromisoformat(data['date']),
+                'text': data['text'],
+                'type': data['type'],
+                'department': data['department'],
+                'archived': False,
+                'created_at': datetime.now(),
+                'is_done': False,
+                'date_done': datetime.now(),
+            }
+            result = faults.insert_one(fault_data)
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Замечание успешно добавлено',
+                'id': str(result.inserted_id)
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
+
+
+@csrf_exempt
+def archive_fault(request, fault_id):
+    if request.method == 'POST':
+        try:
+            result = faults.update_one(
+                {'_id': ObjectId(fault_id)},
+                {'$set': {'archived': True, 'archived_at': datetime.now()}}
+            )
+            if result.modified_count == 1:
+                return JsonResponse({'status': 'success', 'message': 'Распоряжение архивировано'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Распоряжение не найдено'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
+
+
+@csrf_exempt
+def mark_fault_done(request, fault_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            service = data.get('service')
+            done_date = datetime.fromisoformat(data.get('done_date').replace('Z', '+00:00'))
+            result = faults.update_one(
+                {'_id': ObjectId(fault_id)},
+                {'$set': {f'is_done': True, 'date_done': done_date}}
+            )
+            if result.modified_count == 1:
+                return JsonResponse({'status': 'success', 'message': 'Замечание обновлено'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Замечание не найдено'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
