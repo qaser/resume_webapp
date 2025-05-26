@@ -1,0 +1,38 @@
+<div class="form-container">
+    <h2>Устранение замечаний</h2>
+
+    <form id="faultsForm">
+        <div class="form-group">
+            <label for="faultType">Тип замечания</label>
+            <select id="faultType" name="type" required>
+                <option value="" disabled selected>Выберите тип</option>
+                {{faultTypes}}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="faultDepartment">Служба</label>
+            <select id="faultDepartment" name="department" required>
+                <option value="" disabled selected>Выберите службу</option>
+                {{services}}
+            </select>
+            <div class="error-message" id="departmentError" style="display: none;">Пожалуйста, выберите службу</div>
+        </div>
+
+        <div class="form-group">
+            <label for="faultDate">Дата устранения (до)</label>
+            <input type="date" id="faultDate" name="date" required>
+        </div>
+
+        <div class="form-group">
+            <label for="faultText">Текст замечания</label>
+            <textarea id="faultText" name="text" required></textarea>
+        </div>
+
+        <button type="submit" class="submit-button">Добавить замечание</button>
+    </form>
+
+    <div id="faultsList" class="faults-list">
+        <div class="loading">Загрузка данных...</div>
+    </div>
+</div>
