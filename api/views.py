@@ -35,7 +35,7 @@ def get_requests(request):
     # 2. Approved — согласованы на сегодня, но не завершены
     approved_filter = {
         '$expr': {
-            '$eq': [
+            '$lte': [
                 {'$dateToString': {'format': '%Y-%m-%d', 'date': '$request_datetime'}},
                 today_str
             ]
