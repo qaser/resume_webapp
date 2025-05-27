@@ -17,20 +17,23 @@ from rest_framework.decorators import api_view
 def get_requests(request):
     today_str = get_today()
 
-    # Получаем все path'ы как словарь: path_id -> path_type
-    all_paths = list(paths.find({}, {'_id': 1, 'path_type': 1}))
-    path_dict = {p['_id']: p.get('path_type', '—') for p in all_paths}
+    # Получаем все path'ы как словарь: path_id -> path_type и num_stages
+    all_paths = list(paths.find({}, {'_id': 1, 'path_type': 1, 'num_stages': 1}))
+    path_dict = {p['_id']: {'path_type': p.get('path_type', '—'), 'num_stages': p.get('num_stages', 0)}
+               for p in all_paths}
 
-    def add_gpa_type_and_cleanup(data):
+    def add_gpa_type_and_stages(data):
         for r in data:
-            r['gpa_type'] = path_dict.get(r.get('path_id'), '—')
+            path_info = path_dict.get(r.get('path_id'), {})
+            r['gpa_type'] = path_info.get('path_type', '—')
+            r['num_stages'] = path_info.get('num_stages', 0)  # Добавляем num_stages
             r.pop('path_id', None)  # Удаляем path_id
         return data
 
     # 1. Pending — на согласовании
     pending_filter = {'status': 'inwork', 'req_type': 'with_approval'}
     pending = list(reqs.find(pending_filter, {'_id': 0, 'gpa_id': 0, 'files': 0}).sort('request_datetime', 1))
-    pending = add_gpa_type_and_cleanup(pending)
+    pending = add_gpa_type_and_stages(pending)  # Используем новую функцию
 
     # 2. Approved — согласованы на сегодня, но не завершены
     approved_filter = {
@@ -44,7 +47,7 @@ def get_requests(request):
         'is_complete': False
     }
     approved = list(reqs.find(approved_filter, {'_id': 0, 'gpa_id': 0, 'files': 0}).sort('request_datetime', 1))
-    approved = add_gpa_type_and_cleanup(approved)
+    approved = add_gpa_type_and_stages(approved)
 
     # 3. Completed — завершены на сегодня
     completed_filter = {
@@ -58,7 +61,7 @@ def get_requests(request):
         'is_complete': True
     }
     completed = list(reqs.find(completed_filter, {'_id': 0, 'gpa_id': 0, 'files': 0}).sort('request_datetime', 1))
-    completed = add_gpa_type_and_cleanup(completed)
+    completed = add_gpa_type_and_stages(completed)
 
     return JsonResponse({
         'pending': pending,
