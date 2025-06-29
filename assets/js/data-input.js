@@ -12,7 +12,6 @@ export default class DataInputManager {
         const currentUserDepartment = localStorage.getItem("department");
         this.isAdmin = currentUserDepartment === "Админ";
 
-        // Для не-админов показываем информацию о текущей службе
         if (!this.isAdmin) {
             const currentServiceInfo = document.getElementById("currentServiceInfo");
             const currentServiceValue = document.getElementById("currentServiceValue");
@@ -57,7 +56,6 @@ export default class DataInputManager {
         this.currentType = null;
         this.currentService = this.isAdmin ? null : localStorage.getItem("department");
 
-        // Скрываем выбор службы для не-админов
         if (!this.isAdmin) {
             this.serviceButtonsContainer.style.display = "none";
         }
@@ -69,7 +67,6 @@ export default class DataInputManager {
                 this.currentType = button.dataset.type;
                 document.getElementById("typeError").style.display = "none";
 
-                // Для админа показываем выбор службы, для остальных сразу показываем форму
                 if (this.isAdmin) {
                     this.serviceButtonsContainer.style.display = "block";
                     this.reportForm.style.display = "none";
@@ -88,7 +85,6 @@ export default class DataInputManager {
             });
         });
 
-        // Обработчик выбора службы (только для админа)
         if (this.isAdmin) {
             this.serviceButtons.forEach(button => {
                 button.addEventListener("click", async () => {
@@ -109,7 +105,6 @@ export default class DataInputManager {
             });
         }
 
-        // Отправка формы
         this.reportForm.addEventListener("submit", async (e) => {
             e.preventDefault();
             const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -130,14 +125,14 @@ export default class DataInputManager {
                     csrfmiddlewaretoken: this.csrfToken
                 };
 
-                // Добавляем данные утечек для разрешенных служб
                 const hideForServices = ['ВПО', 'Связь'];
                 if (!hideForServices.includes(this.currentService) && this.currentType === 'weekly') {
-                    data.leak_total = parseInt(formData.get('leak_total')) || 0;
-                    data.leak_done = parseInt(formData.get('leak_done')) || 0;
+                    const leakTotal = formData.get('leak_total');
+                    const leakDone = formData.get('leak_done');
+                    if (leakTotal !== null) data.leak_total = parseInt(leakTotal) || 0;
+                    if (leakDone !== null) data.leak_done = parseInt(leakDone) || 0;
                 }
 
-                // Для службы ЛЭС добавляем данные КСС
                 if (this.currentService === 'ЛЭС' && this.currentType === 'weekly') {
                     const kssDone = formData.get('kss_done');
                     if (kssDone) {
@@ -145,7 +140,6 @@ export default class DataInputManager {
                     }
                 }
 
-                // Собираем данные протоколов для weekly
                 if (this.currentType === 'weekly') {
                     document.querySelectorAll('.protocol-action-btn').forEach(btn => {
                         const protocolId = btn.dataset.id;
@@ -164,7 +158,6 @@ export default class DataInputManager {
                     this.reportForm.reset();
 
                     setTimeout(() => {
-                        // Сбрасываем форму к начальному состоянию
                         this.typeButtons.forEach(btn => btn.classList.remove("active"));
                         if (this.isAdmin) {
                             this.serviceButtons.forEach(btn => btn.classList.remove("active"));
@@ -188,31 +181,34 @@ export default class DataInputManager {
 
     async loadAdditionalFields(type, service) {
         if (type === 'weekly') {
-            // Загружаем поле утечек отдельно
             const leaksHtml = await this.loadTemplate('leaks-field');
             this.dynamicFields.insertAdjacentHTML('beforeend', leaksHtml);
 
-            // Показываем поле утечек для всех, кроме ВПО и Связь
             const leaksSection = document.querySelector('.form-group-leak');
             if (leaksSection) {
                 const hideForServices = ['ВПО', 'Связь'];
-                leaksSection.style.display = hideForServices.includes(service) ? 'none' : 'block';
+                const hidden = hideForServices.includes(service);
+                leaksSection.style.display = hidden ? 'none' : 'block';
+                leaksSection.querySelectorAll("input, textarea, select").forEach(el => {
+                    el.disabled = hidden;
+                });
             }
 
-            // Загружаем поле КСС отдельно
             const kssHtml = await this.loadTemplate('kss-field');
             this.dynamicFields.insertAdjacentHTML('beforeend', kssHtml);
 
-            // Показываем поле КСС только для ЛЭС
             const kssSection = document.querySelector('.form-group-kss');
             if (kssSection) {
-                kssSection.style.display = service === 'ЛЭС' ? 'block' : 'none';
+                const hidden = service !== 'ЛЭС';
+                kssSection.style.display = hidden ? 'none' : 'block';
+                kssSection.querySelectorAll("input, textarea, select").forEach(el => {
+                    el.disabled = hidden;
+                });
             }
 
             // await this.loadProtocolsForReport(service);
         }
 
-        // Инициализация обработчиков для полей ввода
         const allInputs = this.dynamicFields.querySelectorAll("input[type='number']");
         allInputs.forEach(input => {
             if (input.name.includes("undone")) {
