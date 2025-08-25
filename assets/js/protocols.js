@@ -4,7 +4,7 @@ export default class ProtocolsManager {
         this.api = api;
         this.csrfToken = csrfToken;
         this.services = [
-            'КС-1,4', 'КС-2,3', 'КС-5,6', 'КС-7,8', 'КС-9,10',
+            'КС-1,4', 'КС-2,3', 'КС-5,6', 'КС-7,8', 'КС-9,10', 'ГКС',
             'АиМО', 'ЭВС', 'ЛЭС', 'СЗК', 'Связь', 'ВПО'
         ];
     }

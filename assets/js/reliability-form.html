@@ -1,0 +1,39 @@
+<div class="form-container">
+    <h2>Мероприятия по надёжности</h2>
+
+    <div id="reliabilityFormContainer">
+        <form id="reliabilityForm">
+            <div class="form-group form-group-order">
+                <label for="reliabilityName">Наименование мероприятия</label>
+                <input id="reliabilityName" name="name" required>
+            </div>
+
+            <div class="form-group form-group-order">
+                <label for="reliabilityDeadline">Срок выполнения</label>
+                <input type="date" id="reliabilityDeadline" name="date" required>
+            </div>
+
+            <div class="form-group form-group-order">
+                <label for="reliabilityNote">Примечание</label>
+                <textarea id="reliabilityNote" name="note"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Выберите службы для исполнения</label>
+                <div class="service-buttons" id="serviceButtons">
+                    {{services}}
+                </div>
+                <div class="error-message" id="serviceError" style="display: none;">Пожалуйста, выберите хотя бы одну службу</div>
+            </div>
+
+            <div class="form-buttons">
+                <button type="submit" class="submit-button">Добавить мероприятие</button>
+                <button type="button" id="uploadExcelBtn" class="secondary-button">Загрузить из Excel</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="reliabilityList" class="reliability-list">
+        <div class="loading">Загрузка данных...</div>
+    </div>
+</div>

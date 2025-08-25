@@ -6,7 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
 from report_webapp.utils import (reports, plans, kss, remarks,
                                  leaks, protocols, orders, authenticate_user,
-                                 users, faults)
+                                 users, faults, reliability)
 from django.http import JsonResponse
 
 
@@ -341,7 +341,7 @@ def view_data(request):
     """Страница просмотра данных"""
     services = [
         'КС-1,4', 'КС-2,3', 'КС-5,6', 'КС-7,8', 'КС-9,10',
-        'АиМО', 'ЭВС', 'ЛЭС', 'СЗК', 'Связь', 'ВПО'
+        'ГКС', 'АиМО', 'ЭВС', 'ЛЭС', 'СЗК', 'Связь', 'ВПО'
     ]
     return render(request, 'report_webapp/index.html', {'services': services})
 
@@ -721,3 +721,102 @@ def mark_fault_done(request, fault_id):
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
+
+
+@csrf_exempt
+def handle_reliability(request):
+    if request.method == 'GET':
+        try:
+            # Получаем только неархивированные мероприятия
+            queryset = list(reliability.find(
+                {'archived': {'$ne': True}},
+                {'_id': 1, 'name': 1, 'date': 1, 'departments': 1,
+                 'note': 1, 'archived': 1, 'done': 1}
+            ).sort('deadline', 1))
+
+            formatted_items = []
+            for item in queryset:
+                formatted = {
+                    '_id': str(item['_id']),
+                    'name': item['name'],
+                    'date': item['date'].isoformat(),
+                    'departments': item['departments'],
+                    'note': item.get('note', ''),
+                    'done': {}
+                }
+
+                if 'done' in item:
+                    for dept, date in item['done'].items():
+                        if isinstance(date, datetime):
+                            formatted['done'][dept] = date.isoformat()
+                        else:
+                            formatted['done'][dept] = date
+
+                formatted_items.append(formatted)
+
+            return JsonResponse({
+                'status': 'success',
+                'items': formatted_items
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    elif request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            reliability_data = {
+                'name': data['name'],
+                'date': datetime.fromisoformat(data['date']),
+                'departments': data['departments'],
+                'note': data.get('note', ''),
+                'archived': False,
+                'created_at': datetime.now(),
+                'done': {}
+            }
+
+            result = reliability.insert_one(reliability_data)
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Мероприятие успешно добавлено',
+                'id': str(result.inserted_id)
+            })
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+def archive_reliability(request, item_id):
+    if request.method == 'POST':
+        try:
+            result = reliability.update_one(
+                {'_id': ObjectId(item_id)},
+                {'$set': {'archived': True, 'archived_at': datetime.now()}}
+            )
+
+            if result.modified_count == 1:
+                return JsonResponse({'status': 'success', 'message': 'Мероприятие архивировано'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Мероприятие не найдено'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+def mark_reliability_done(request, item_id):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            service = data.get('service')
+            done_date = datetime.fromisoformat(data.get('done_date').replace('Z', '+00:00'))
+
+            result = reliability.update_one(
+                {'_id': ObjectId(item_id)},
+                {'$set': {f'done.{service}': done_date}}
+            )
+
+            if result.modified_count == 1:
+                return JsonResponse({'status': 'success', 'message': 'Мероприятие обновлено'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Мероприятие не найдено'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

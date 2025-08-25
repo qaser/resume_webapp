@@ -208,6 +208,62 @@ class ApiService {
         });
         return await response.json();
     }
+
+    async getReliabilityItems() {
+        const response = await fetch('/api/reliability/');
+        return await response.json();
+    }
+
+    async addReliability(data) {
+        const response = await fetch('/api/reliability/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.csrfToken,
+            },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    }
+
+    async archiveReliability(id) {
+        const response = await fetch(`/api/reliability/${id}/archive/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': this.csrfToken,
+            }
+        });
+        return await response.json();
+    }
+
+    async markReliabilityDone(id, service) {
+        const response = await fetch(`/api/reliability/${id}/done/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.csrfToken,
+            },
+            body: JSON.stringify({ service, done_date: new Date().toISOString() })
+        });
+        return await response.json();
+    }
+
+    async getReliabilityItemById(id) {
+        const response = await fetch(`/api/reliability/${id}`);
+        return await response.json();
+    }
+
+    async markReliabilityDone(id, service, doneDate) {
+        const response = await fetch(`/api/reliability/${id}/done/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.csrfToken,
+            },
+            body: JSON.stringify({ service, done_date: doneDate })
+        });
+        return await response.json();
+    }
 }
 
 // Экспортируем класс для использования в других файлах

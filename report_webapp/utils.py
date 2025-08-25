@@ -19,6 +19,7 @@ protocols = db['protocols']
 orders = db['orders']
 users = db['users']
 faults = db['faults']
+reliability = db['reliability']
 
 
 def authenticate_user(department, password):

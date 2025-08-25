@@ -1,5 +1,4 @@
-// orders.js
-export default class OrdersManager {
+export default class ReliabilityManager {
     constructor(api, csrfToken) {
         this.api = api;
         this.csrfToken = csrfToken;
@@ -9,12 +8,12 @@ export default class OrdersManager {
         ];
     }
 
-    async renderOrderForm(isAdmin) {
-        const template = await this.loadTemplate('order-form', {
+    async renderReliabilityForm(isAdmin) {
+        const template = await this.loadTemplate('reliability-form', {
             showForm: isAdmin,
             services: this.services
         });
-        return { html: template, init: () => this.initOrderForm(isAdmin) };
+        return { html: template, init: () => this.initReliabilityForm(isAdmin) };
     }
 
     async loadTemplate(templateName, data = {}) {
@@ -49,16 +48,24 @@ export default class OrdersManager {
         }
     }
 
-    initOrderForm(isAdmin) {
-        const orderForm = document.getElementById("orderForm");
-        const ordersList = document.getElementById("ordersList");
+    initReliabilityForm(isAdmin) {
+        const reliabilityForm = document.getElementById("reliabilityForm");
+        const reliabilityList = document.getElementById("reliabilityList");
+        const uploadBtn = document.getElementById("uploadExcelBtn");
         const currentUserDepartment = localStorage.getItem("department");
 
-        if (!isAdmin && orderForm) {
-            orderForm.style.display = 'none';
+        if (!isAdmin && reliabilityForm) {
+            reliabilityForm.style.display = 'none';
         }
 
-        if (isAdmin && orderForm) {
+        if (isAdmin && reliabilityForm) {
+            // Кнопка загрузки Excel (пока заглушка)
+            if (uploadBtn) {
+                uploadBtn.addEventListener('click', () => {
+                    this.showNotification('Функция загрузки Excel будет реализована позже', 'info');
+                });
+            }
+
             const serviceButtons = document.querySelectorAll('#serviceButtons .service-btn');
             const selectedDepartments = new Set();
 
@@ -76,7 +83,7 @@ export default class OrdersManager {
                 });
             });
 
-            orderForm.addEventListener("submit", async (e) => {
+            reliabilityForm.addEventListener("submit", async (e) => {
                 e.preventDefault();
                 const submitBtn = e.target.querySelector('button[type="submit"]');
                 submitBtn.classList.add('loading');
@@ -86,89 +93,88 @@ export default class OrdersManager {
                         throw new Error("Не выбраны службы для выполнения");
                     }
 
-                    const formData = new FormData(orderForm);
+                    const formData = new FormData(reliabilityForm);
                     const data = {
+                        name: formData.get('name'),
                         date: formData.get('date'),
-                        num: formData.get('num'),
-                        text: formData.get('text'),
+                        note: formData.get('note'),
                         departments: Array.from(selectedDepartments),
                         csrfmiddlewaretoken: this.csrfToken
                     };
 
-                    const result = await this.api.addOrder(data);
+                    const result = await this.api.addReliability(data);
 
                     if (result.status === 'success') {
-                        this.showNotification('✓ Распоряжение успешно добавлено', 'success');
-                        orderForm.reset();
+                        this.showNotification('✓ Мероприятие успешно добавлено', 'success');
+                        reliabilityForm.reset();
                         serviceButtons.forEach(btn => btn.classList.remove('active'));
                         selectedDepartments.clear();
-                        await this.loadOrders(ordersList, isAdmin, currentUserDepartment);
+                        await this.loadReliabilityItems(reliabilityList, isAdmin, currentUserDepartment);
                     } else {
-                        throw new Error(result.message || 'Ошибка добавления распоряжения');
+                        throw new Error(result.message || 'Ошибка добавления мероприятия');
                     }
                 } catch (error) {
                     console.error('Ошибка:', error);
-                    this.showNotification(error.message || 'Ошибка при добавлении распоряжения', 'error');
+                    this.showNotification(error.message || 'Ошибка при добавлении мероприятия', 'error');
                 } finally {
                     submitBtn.classList.remove('loading');
                 }
             });
         }
 
-        this.loadOrders(ordersList, isAdmin, currentUserDepartment);
+        this.loadReliabilityItems(reliabilityList, isAdmin, currentUserDepartment);
     }
 
-    async loadOrders(container, isAdmin, currentUserDepartment) {
+    async loadReliabilityItems(container, isAdmin, currentUserDepartment) {
         container.innerHTML = '<div class="loading">Загрузка данных...</div>';
 
         try {
-            const result = await this.api.getOrders();
+            const result = await this.api.getReliabilityItems();
 
             if (result.status === 'success') {
-                if (result.orders && result.orders.length > 0) {
+                if (result.items && result.items.length > 0) {
                     let html = '';
 
-                    result.orders.forEach(order => {
-                        if (!order.archived) {
+                    result.items.forEach(item => {
+                        if (!item.archived) {
                             // Для не-админов показываем только распоряжения для их службы
-                            if (!isAdmin && (!order.departments ||
-                                !order.departments.includes(currentUserDepartment))) {
+                            if (!isAdmin && (!item.departments ||
+                                !item.departments.includes(currentUserDepartment))) {
                                 return;
                             }
-                            html += this.renderOrderItem(order, isAdmin, currentUserDepartment);
+                            html += this.renderReliabilityItem(item, isAdmin, currentUserDepartment);
                         }
                     });
 
-                    container.innerHTML = '<h3>Список распоряжений (приказов)</h3>' +
-                        (html || '<div class="no-data">Нет активных распоряжений</div>');
+                    container.innerHTML = '<h3>Мероприятия по надёжности</h3>' +
+                        (html || '<div class="no-data">Нет мероприятий</div>');
 
-                    this.initOrderActions(container, isAdmin, currentUserDepartment);
+                    this.initReliabilityActions(container, isAdmin, currentUserDepartment);
                 } else {
-                    container.innerHTML = '<h3>Список распоряжений (приказов)</h3><div class="no-data">Нет активных распоряжений</div>';
+                    container.innerHTML = '<h3>Мероприятия по надёжности</h3><div class="no-data">Нет мероприятий</div>';
                 }
             } else {
-                throw new Error(result.message || 'Ошибка загрузки распоряжений');
+                throw new Error(result.message || 'Ошибка загрузки мероприятий');
             }
         } catch (error) {
-            console.error('Ошибка загрузки распоряжений:', error);
+            console.error('Ошибка загрузки мероприятий:', error);
             container.innerHTML = `
                 <div class="error">
-                    Ошибка загрузки распоряжений
+                    Ошибка загрузки мероприятий
                     <div class="error-detail">${error.message}</div>
                 </div>
             `;
         }
     }
 
-    renderOrderItem(order, isAdmin, currentUserDepartment) {
-        // Рендерим службы как теги только для админов или если это текущая служба пользователя
-        const departmentsTags = order.departments && order.departments.length > 0
+    renderReliabilityItem(item, isAdmin, currentUserDepartment) {
+        const departmentsTags = item.departments && item.departments.length > 0
             ? `
                 <div class="order-tags">
-                    ${order.departments.map(dept => {
+                    ${item.departments.map(dept => {
                         // Показываем тег только если это админ или текущая служба пользователя
                         if (isAdmin || dept === currentUserDepartment) {
-                            const isDone = order.done && order.done[dept];
+                            const isDone = item.done && item.done[dept];
                             return `
                                 <span class="order-tag
                                         ${dept === currentUserDepartment ? 'current' : ''}
@@ -184,15 +190,15 @@ export default class OrdersManager {
             : '';
 
         // Статус выполнения для текущего пользователя
-        const isDoneForCurrentUser = order.done && order.done[currentUserDepartment];
+        const isDoneForCurrentUser = item.done && item.done[currentUserDepartment];
 
-        // Кнопка выполнения (только для назначенных распоряжений)
+        // Кнопка выполнения (только для назначенных мероприятий)
         const actionButton = !isAdmin &&
-            order.departments &&
-            order.departments.includes(currentUserDepartment)
+            item.departments &&
+            item.departments.includes(currentUserDepartment)
                 ? `
                     <button class="order-action-btn ${isDoneForCurrentUser ? 'done' : ''}"
-                            data-id="${order._id}">
+                            data-id="${item._id}">
                         ${isDoneForCurrentUser ? 'Выполнено' : 'Отметить выполнение'}
                     </button>
                 `
@@ -201,24 +207,24 @@ export default class OrdersManager {
         // Кнопка архивирования (только для админа)
         const archiveButton = isAdmin
             ? `
-                <button class="archive-btn" data-id="${order._id}">
+                <button class="archive-btn" data-id="${item._id}">
                     Архивировать
                 </button>
             `
             : '';
 
         return `
-            <div class="order-item" data-id="${order._id}">
-                <div class="order-header">
-                    <div class="order-num">№${order.num}</div>
-                    <div class="order-date">${new Date(order.date).toLocaleDateString()}</div>
+            <div class="reliability-item" data-id="${item._id}">
+                <div class="reliability-header">
+                    <div class="reliability-date">${new Date(item.date).toLocaleDateString()}</div>
                 </div>
 
                 ${departmentsTags}
 
-                <div class="order-text">${order.text}</div>
+                <div class="reliability-name">${item.name}</div>
+                <div class="reliability-note">${item.note}</div>
 
-                <div class="order-footer">
+                <div class="reliability-footer">
                     ${actionButton}
                     ${archiveButton}
                 </div>
@@ -226,20 +232,20 @@ export default class OrdersManager {
         `;
     }
 
-    initOrderActions(container, isAdmin, currentUserDepartment) {
+    initReliabilityActions(container, isAdmin, currentUserDepartment) {
         // Обработка архивирования (для админов)
         container.querySelectorAll('.archive-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
-                const orderId = btn.dataset.id;
-                const orderItem = btn.closest('.order-item');
+                const itemId = btn.dataset.id;
+                const itemElement = btn.closest('.reliability-item');
 
-                if (confirm('Вы уверены, что хотите архивировать это распоряжение?')) {
+                if (confirm('Вы уверены, что хотите архивировать это мероприятие?')) {
                     try {
-                        const result = await this.api.archiveOrder(orderId);
+                        const result = await this.api.archiveReliability(itemId);
 
                         if (result.status === 'success') {
-                            this.showNotification('✓ Распоряжение архивировано', 'success');
-                            orderItem.remove();
+                            this.showNotification('✓ Мероприятие архивировано', 'success');
+                            itemElement.remove();
                         } else {
                             throw new Error(result.message || 'Ошибка архивирования');
                         }
@@ -254,40 +260,42 @@ export default class OrdersManager {
         // Обработка отметки выполнения (для не-админов)
         container.querySelectorAll('.order-action-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
-                const orderId = btn.dataset.id;
-                const orderItem = btn.closest('.order-item');
+                const itemId = btn.dataset.id;
+                const itemElement = btn.closest('.reliability-item');
 
                 try {
-                    const result = await this.api.updateOrder(
-                        orderId,
+                    const result = await this.api.markReliabilityDone(
+                        itemId,
                         currentUserDepartment,
                         new Date().toISOString()
                     );
 
                     if (result.status === 'success') {
-                        this.showNotification('✓ Распоряжение отмечено выполненным', 'success');
-                        // Обновляем отображение распоряжения
-                        const order = await this.getOrderById(orderId);
-                        if (order) {
-                            const orderHtml = this.renderOrderItem(order, isAdmin, currentUserDepartment);
-                            orderItem.outerHTML = orderHtml;
+                        this.showNotification('✓ Мероприятие отмечено выполненным', 'success');
+                        // Обновляем отображение мероприятия
+                        const item = await this.getReliabilityById(itemId);
+                        if (item) {
+                            const itemHtml = this.renderReliabilityItem(item, isAdmin, currentUserDepartment);
+                            itemElement.outerHTML = itemHtml;
+                            // Реинициализируем обработчики для нового элемента
+                            this.initReliabilityActions(container, isAdmin, currentUserDepartment);
                         }
                     } else {
-                        throw new Error(result.message || 'Ошибка обновления распоряжения');
+                        throw new Error(result.message || 'Ошибка обновления мероприятия');
                     }
                 } catch (error) {
                     console.error('Ошибка:', error);
-                    this.showNotification(error.message || 'Ошибка при обновлении распоряжения', 'error');
+                    this.showNotification(error.message || 'Ошибка при обновлении мероприятия', 'error');
                 }
             });
         });
     }
 
-    async getOrderById(orderId) {
+    async getReliabilityById(itemId) {
         try {
-            const result = await this.api.getOrders();
-            if (result.status === 'success' && result.orders) {
-                return result.orders.find(o => o._id === orderId);
+            const result = await this.api.getReliabilityItems();
+            if (result.status === 'success' && result.items) {
+                return result.items.find(o => o._id === itemId);
             }
             return null;
         } catch (error) {

@@ -14,6 +14,7 @@ export default class PlanningManager {
         if (isAdmin) {
             serviceOptions = `
                 <option value="">-- Выберите службу --</option>
+                <option value="ГКС">ГКС</option>
                 <option value="КС-1,4">КС-1,4</option>
                 <option value="КС-2,3">КС-2,3</option>
                 <option value="КС-5,6">КС-5,6</option>

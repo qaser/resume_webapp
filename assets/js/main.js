@@ -1,6 +1,7 @@
 import ApiService from './api.js';
 import ProtocolsManager from './protocols.js';
 import OrdersManager from './orders.js';
+import ReliabilityManager from './reliability.js';
 import PlanningManager from './planning.js';
 import DataViewManager from './data-view.js';
 import DataInputManager from './data-input.js';
@@ -14,6 +15,7 @@ const protocolsManager = new ProtocolsManager(api, csrfToken);
 const ordersManager = new OrdersManager(api, csrfToken);
 const planningManager = new PlanningManager(api, csrfToken);
 const faultsManager = new FaultsManager(api, csrfToken);
+const reliabilityManager = new ReliabilityManager(api, csrfToken);
 
 const AppState = {
     currentUser: {
@@ -64,8 +66,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 appContainer.innerHTML = html;
                 init();
             },
-            dataOrderlBtn: async () => {
+            dataOrderBtn: async () => {
                 const { html, init } = await ordersManager.renderOrderForm(AppState.currentUser.isAdmin);
+                appContainer.innerHTML = html;
+                init();
+            },
+            dataReliabilityBtn: async () => {
+                const { html, init } = await reliabilityManager.renderReliabilityForm(AppState.currentUser.isAdmin);
                 appContainer.innerHTML = html;
                 init();
             }

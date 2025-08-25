@@ -22,4 +22,7 @@ urlpatterns = [
     path('api/faults/<str:fault_id>/done/', views.mark_fault_done, name='mark_fault_done'),
     path("api/authenticate/", views.authenticate_view),
     path("api/departments/", views.departments_list),
+    path('api/reliability/', views.handle_reliability, name='reliability'),
+    path('api/reliability/<str:item_id>/archive/', views.archive_reliability, name='archive_reliability'),
+    path('api/reliability/<str:item_id>/done/', views.mark_reliability_done, name='mark_reliability_done'),
 ]
