@@ -1,6 +1,6 @@
 import json
 from bson import ObjectId
-from datetime import datetime, timedelta
+from datetime import datetime
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import render
@@ -8,6 +8,31 @@ from report_webapp.utils import (reports, plans, kss, remarks,
                                  leaks, protocols, orders, authenticate_user,
                                  users, faults, reliability)
 from django.http import JsonResponse
+from openpyxl import load_workbook
+from openpyxl.utils import get_column_letter
+
+from reports.utils import parse_date_to_dmy, parse_departments
+
+
+# Добавим mapping для преобразования названий служб
+DEPARTMENT_MAPPING = {
+    'начальник гкс': ['ГКС'],
+    'начальники кс': ['КС-1,4', 'КС-2,3', 'КС-5,6', 'КС-7,8', 'КС-9,10'],
+    'начальник кс-1,4': ['КС-1,4'],
+    'начальник кс-2,3': ['КС-2,3'],
+    'начальник кс-5,6': ['КС-5,6'],
+    'начальник кс-7,8': ['КС-7,8'],
+    'начальник кс-9,10': ['КС-9,10'],
+    'начальник службы аимо': ['АиМО'],
+    'начальник службы эвс': ['ЭВС'],
+    'начальник службы лэс': ['ЛЭС'],
+    'начальник службы сзк': ['СЗК'],
+    'начальник службы связь': ['Связь'],
+    'начальник службы впо': ['ВПО'],
+    'инженера по ремонту': ['ГКС'],
+    'инженер эого (техдиагностика)': ['ГКС'],
+    'инженер по ремонту': ['ГКС'],
+}
 
 
 # Словарь для преобразования технических имен в читаемые
@@ -55,6 +80,7 @@ FIELD_NAMES_MAPPING = {
     # КСС
     'kss_done': 'Выполнено КСС'
 }
+
 
 @csrf_exempt
 def handle_report(request):
@@ -739,7 +765,7 @@ def handle_reliability(request):
                 formatted = {
                     '_id': str(item['_id']),
                     'name': item['name'],
-                    'date': item['date'].isoformat(),
+                    'date': item['date'],
                     'departments': item['departments'],
                     'note': item.get('note', ''),
                     'done': {}
@@ -766,7 +792,7 @@ def handle_reliability(request):
             data = json.loads(request.body)
             reliability_data = {
                 'name': data['name'],
-                'date': datetime.fromisoformat(data['date']),
+                'date': data['date'],
                 'departments': data['departments'],
                 'note': data.get('note', ''),
                 'archived': False,
@@ -820,3 +846,130 @@ def mark_reliability_done(request, item_id):
                 return JsonResponse({'status': 'error', 'message': 'Мероприятие не найдено'}, status=404)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+@csrf_exempt
+def upload_reliability_excel(request):
+    if request.method == 'POST':
+        try:
+            if 'excel_file' not in request.FILES:
+                return JsonResponse({'status': 'error', 'message': 'Файл не найден'}, status=400)
+
+            excel_file = request.FILES['excel_file']
+
+            # Загружаем Excel файл
+            wb = load_workbook(excel_file, data_only=True)
+            sheet = wb.active
+
+            # Функция для поиска строки с заголовками
+            def find_header_row(sheet):
+                header_patterns = [
+                    'наименование мероприятия',
+                    'сроки реализации',
+                    'ответственные',
+                    'примечание',
+                    'оборудование'
+                ]
+
+                for row in range(1, sheet.max_row + 1):
+                    for col in range(1, sheet.max_column + 1):
+                        cell_value = sheet.cell(row=row, column=col).value
+                        if cell_value and any(pattern in str(cell_value).lower() for pattern in header_patterns):
+                            return row
+                return None
+
+            # Находим строку с заголовками
+            header_row = find_header_row(sheet)
+            if not header_row:
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Не удалось найти заголовки таблицы в файле'
+                }, status=400)
+
+            # Определяем столбцы по заголовкам
+            headers = {}
+            for col in range(1, sheet.max_column + 1):
+                cell_value = sheet.cell(row=header_row, column=col).value
+                if cell_value:
+                    header = str(cell_value).lower().strip()
+                    if 'наименование мероприятия' in header:
+                        headers['name'] = col
+                    elif 'наименование/тип оборудования' in header or 'оборудование' in header:
+                        headers['equipment'] = col
+                    elif 'сроки реализации' in header or 'периодичность выполнения' in header:
+                        headers['date'] = col
+                    elif 'ответственные' in header:
+                        headers['departments'] = col
+                    elif 'примечание' in header:
+                        headers['note'] = col
+
+            if not all(key in headers for key in ['name', 'date', 'departments']):
+                return JsonResponse({
+                    'status': 'error',
+                    'message': 'Не найдены необходимые столбцы: Наименование мероприятия, Сроки реализации, Ответственные'
+                }, status=400)
+
+            imported_count = 0
+            skipped_count = 0
+
+            # Обрабатываем строки начиная со следующей после заголовков
+            for row in range(header_row + 1, sheet.max_row + 1):
+                name = sheet.cell(row=row, column=headers['name']).value
+                equipment = sheet.cell(row=row, column=headers.get('equipment')).value if headers.get('equipment') else None
+                date = sheet.cell(row=row, column=headers['date']).value
+                departments_text = sheet.cell(row=row, column=headers['departments']).value
+                note = sheet.cell(row=row, column=headers.get('note')).value if headers.get('note') else None
+
+                # Пропускаем пустые строки (где нет названия мероприятия)
+                if not name:
+                    continue
+
+                # Формируем полное название мероприятия
+                full_name = str(name)
+                if equipment:
+                    full_name = f"{equipment}. {full_name}"
+
+                # Преобразуем дату в строку в формате ДД.ММ.ГГГГ
+                date_str = parse_date_to_dmy(date)
+
+                # Парсим ответственные службы
+                departments = parse_departments(str(departments_text) if departments_text else '')
+
+                # Пропускаем если нет ответственных служб
+                if not departments:
+                    skipped_count += 1
+                    continue
+
+                # Создаем запись мероприятия
+                reliability_data = {
+                    'name': full_name,
+                    'date': date_str,
+                    'departments': departments,
+                    'note': str(note) if note else '',
+                    'archived': False,
+                    'created_at': datetime.now(),
+                    'done': {},
+                    'source': 'excel_import'
+                }
+
+                # Проверяем, нет ли уже такого мероприятия
+                existing = reliability.find_one({
+                    'name': reliability_data['name'],
+                    'date': reliability_data['date']
+                })
+
+                if not existing:
+                    reliability.insert_one(reliability_data)
+                    imported_count += 1
+                else:
+                    skipped_count += 1
+
+            return JsonResponse({
+                'status': 'success',
+                'message': f'Успешно импортировано {imported_count} мероприятий, пропущено {skipped_count} (дубликаты или без служб)'
+            })
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': f'Ошибка обработки файла: {str(e)}'}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Неверный метод запроса'}, status=400)

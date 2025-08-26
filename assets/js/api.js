@@ -264,6 +264,17 @@ class ApiService {
         });
         return await response.json();
     }
+
+    async uploadReliabilityExcel(formData) {
+        const response = await fetch('/api/reliability/upload-excel/', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': this.csrfToken,
+            },
+            body: formData
+        });
+        return await response.json();
+    }
 }
 
 // Экспортируем класс для использования в других файлах

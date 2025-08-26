@@ -62,7 +62,7 @@ export default class ReliabilityManager {
             // Кнопка загрузки Excel (пока заглушка)
             if (uploadBtn) {
                 uploadBtn.addEventListener('click', () => {
-                    this.showNotification('Функция загрузки Excel будет реализована позже', 'info');
+                    this.handleExcelUpload();
                 });
             }
 
@@ -216,12 +216,12 @@ export default class ReliabilityManager {
         return `
             <div class="reliability-item" data-id="${item._id}">
                 <div class="reliability-header">
-                    <div class="reliability-date">${new Date(item.date).toLocaleDateString()}</div>
+                    <div class="reliability-name">${item.name}</div>
                 </div>
 
                 ${departmentsTags}
 
-                <div class="reliability-name">${item.name}</div>
+                <div class="reliability-date">Срок реализации: ${item.date}</div>
                 <div class="reliability-note">${item.note}</div>
 
                 <div class="reliability-footer">
@@ -314,5 +314,40 @@ export default class ReliabilityManager {
             notification.style.opacity = '0';
             setTimeout(() => notification.remove(), 300);
         }, 3000);
+    }
+
+    // Добавим новый метод для обработки загрузки Excel
+    async handleExcelUpload() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.xlsx,.xls';
+
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('excel_file', file);
+
+            try {
+                this.showNotification('Загрузка файла...', 'info');
+                const result = await this.api.uploadReliabilityExcel(formData);
+
+                if (result.status === 'success') {
+                    this.showNotification(result.message, 'success');
+                    // Перезагружаем список мероприятий
+                    const reliabilityList = document.getElementById("reliabilityList");
+                    const currentUserDepartment = localStorage.getItem("department");
+                    await this.loadReliabilityItems(reliabilityList, true, currentUserDepartment);
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Ошибка загрузки Excel:', error);
+                this.showNotification(error.message || 'Ошибка при загрузке файла', 'error');
+            }
+        };
+
+        input.click();
     }
 }

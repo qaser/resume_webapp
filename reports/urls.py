@@ -25,4 +25,5 @@ urlpatterns = [
     path('api/reliability/', views.handle_reliability, name='reliability'),
     path('api/reliability/<str:item_id>/archive/', views.archive_reliability, name='archive_reliability'),
     path('api/reliability/<str:item_id>/done/', views.mark_reliability_done, name='mark_reliability_done'),
+    path('api/reliability/upload-excel/', views.upload_reliability_excel, name='upload_reliability_excel'),
 ]
