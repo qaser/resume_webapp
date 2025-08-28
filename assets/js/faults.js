@@ -1,71 +1,30 @@
-// faults.js
-export default class FaultsManager {
+import BaseManager from './base-manager.js';
+
+export default class FaultsManager extends BaseManager {
     constructor(api, csrfToken) {
-        this.api = api;
-        this.csrfToken = csrfToken;
-        this.services = [
-            'КС-1,4', 'КС-2,3', 'КС-5,6', 'КС-7,8', 'КС-9,10',
-            'ГКС', 'АиМО', 'ЭВС', 'ЛЭС', 'СЗК', 'Связь', 'ВПО'
-        ];
+        super(api, csrfToken, 'faults');
         this.faultTypes = ['Газнадзор', 'Ростехнадзор'];
+        this.sortOptions = {
+            ...this.sortOptions,
+            type: 'По типу'
+        };
     }
 
     async renderFaultsForm(isAdmin) {
         const template = await this.loadTemplate('faults-form', {
             showForm: isAdmin,
             services: this.services,
-            faultTypes: this.faultTypes
+            faultTypes: this.faultTypes,
+            displayType: 'select' // Явно указываем select для faults
         });
         return { html: template, init: () => this.initFaultsForm(isAdmin) };
-    }
-
-    async loadTemplate(templateName, data = {}) {
-        try {
-            const scriptPath = document.currentScript?.src || new URL(import.meta.url).pathname;
-            const basePath = scriptPath.substring(0, scriptPath.lastIndexOf('/') + 1);
-            const response = await fetch(`${basePath}/${templateName}.html`);
-
-            if (!response.ok) throw new Error('Template not found');
-
-            let html = await response.text();
-
-            // Обработка services для select
-            if (data.services) {
-                const servicesHtml = data.services.map(service =>
-                    `<option value="${service}">${service}</option>`
-                ).join('');
-                html = html.replace('{{services}}', servicesHtml);
-            }
-
-            // Обработка faultTypes для select
-            if (data.faultTypes) {
-                const typesHtml = data.faultTypes.map(type =>
-                    `<option value="${type}">${type}</option>`
-                ).join('');
-                html = html.replace('{{faultTypes}}', typesHtml);
-            }
-
-            // Обработка остальных данных
-            for (const [key, value] of Object.entries(data)) {
-                if (!['services', 'faultTypes'].includes(key)) {
-                    html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
-                }
-            }
-
-            return html;
-        } catch (error) {
-            console.error(`Error loading template ${templateName}:`, error);
-            return `<div class="error">Ошибка загрузки шаблона: ${templateName}</div>`;
-        }
     }
 
     initFaultsForm(isAdmin) {
         const faultsForm = document.getElementById("faultsForm");
         const faultsList = document.getElementById("faultsList");
         const currentUserDepartment = localStorage.getItem("department");
-        const filterButtons = document.querySelectorAll('.fault-filter-btn');
 
-        // Для не-админов скрываем форму добавления
         if (!isAdmin && faultsForm) {
             faultsForm.style.display = 'none';
         }
@@ -113,20 +72,10 @@ export default class FaultsManager {
             });
         }
 
-        // Обработка фильтров
-        filterButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                filterButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                this.loadFaults(faultsList, isAdmin, currentUserDepartment, button.dataset.type);
-            });
-        });
-
-        // Загрузка замечаний
         this.loadFaults(faultsList, isAdmin, currentUserDepartment);
     }
 
-    async loadFaults(container, isAdmin, currentUserDepartment, filterType = 'all') {
+    async loadFaults(container, isAdmin, currentUserDepartment) {
         container.innerHTML = '<div class="loading">Загрузка данных...</div>';
 
         try {
@@ -134,44 +83,52 @@ export default class FaultsManager {
 
             if (result.status === 'success') {
                 if (result.faults && result.faults.length > 0) {
-                    let html = '';
+                    let filteredFaults = result.faults.filter(fault => !fault.archived);
 
-                    result.faults.forEach(fault => {
-                        if (!fault.archived) {
-                            // Фильтрация по типу
-                            if (filterType !== 'all' && fault.type !== filterType) {
-                                return;
-                            }
+                    // Фильтрация по типу
+                    filteredFaults = this.filterItems(filteredFaults, this.currentFilter);
 
-                            // Для не-админов показываем только замечания для их службы
-                            if (!isAdmin && fault.department !== currentUserDepartment) {
-                                return;
-                            }
+                    // Фильтрация для не-админов
+                    if (!isAdmin) {
+                        filteredFaults = filteredFaults.filter(fault =>
+                            fault.department === currentUserDepartment
+                        );
+                    }
 
-                            html += this.renderFaultItem(fault, isAdmin, currentUserDepartment);
-                        }
-                    });
+                    // Сортировка
+                    filteredFaults = this.sortItems(filteredFaults);
+
+                    let html = filteredFaults.map(fault =>
+                        this.renderFaultItem(fault, isAdmin, currentUserDepartment)
+                    ).join('');
 
                     container.innerHTML = `
-                        <div class="faults-filter">
-                            <button class="fault-filter-btn active" data-type="all">Все</button>
-                            ${this.faultTypes.map(type => `
-                                <button class="fault-filter-btn" data-type="${type}">${type}</button>
-                            `).join('')}
+                        <div class="controls-container">
+                            ${this.createFilterControls([
+                                { value: 'all', label: 'Все' },
+                                ...this.faultTypes.map(type => ({ value: type, label: type }))
+                            ])}
+                            ${this.createSortControls()}
                         </div>
                         <div class="faults-container">
                             ${html || '<div class="no-data">Нет активных замечаний</div>'}
                         </div>
                     `;
 
+                    this.initFilterControls(container, () =>
+                        this.loadFaults(container, isAdmin, currentUserDepartment)
+                    );
+                    this.initSortControls(container, () =>
+                        this.loadFaults(container, isAdmin, currentUserDepartment)
+                    );
                     this.initFaultActions(container, isAdmin, currentUserDepartment);
                 } else {
                     container.innerHTML = `
-                        <div class="faults-filter">
-                            <button class="fault-filter-btn active" data-type="all">Все</button>
-                            ${this.faultTypes.map(type => `
-                                <button class="fault-filter-btn" data-type="${type}">${type}</button>
-                            `).join('')}
+                        <div class="controls-container">
+                            ${this.createFilterControls([
+                                { value: 'all', label: 'Все' },
+                                ...this.faultTypes.map(type => ({ value: type, label: type }))
+                            ])}
                         </div>
                         <div class="no-data">Нет активных замечаний</div>
                     `;
@@ -195,7 +152,6 @@ export default class FaultsManager {
         const doneDate = isDone ? new Date(fault.date_done).toLocaleDateString() : '';
         const deadlineDate = new Date(fault.date).toLocaleDateString();
 
-        // Кнопки действий
         const actionButtons = `
             <div class="fault-actions">
                 ${!isDone ? `
@@ -215,9 +171,10 @@ export default class FaultsManager {
             <div class="fault-item ${isDone ? 'done' : ''}" data-id="${fault._id}">
                 <div class="fault-header">
                     <div class="fault-type">${fault.type}</div>
-                    <div class="fault-department">${fault.department}</div>
+                    <div class="department-tags">
+                        <div class="department-tag">${fault.department}</div>
+                    </div>
                 </div>
-
                 <div class="fault-text">${fault.text}</div>
 
                 <div class="fault-dates">
@@ -237,63 +194,43 @@ export default class FaultsManager {
     }
 
     initFaultActions(container, isAdmin, currentUserDepartment) {
-        // Обработка архивирования (для админов)
         container.querySelectorAll('.archive-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const faultId = btn.dataset.id;
                 const faultItem = btn.closest('.fault-item');
 
-                if (confirm('Вы уверены, что хотите архивировать это замечание?')) {
-                    try {
-                        const result = await this.api.archiveFault(faultId);
+                const success = await this.handleArchive(
+                    faultId,
+                    this.api.archiveFault.bind(this.api),
+                    '✓ Замечание архивировано'
+                );
 
-                        if (result.status === 'success') {
-                            this.showNotification('✓ Замечание архивировано', 'success');
-                            faultItem.remove();
-                        } else {
-                            throw new Error(result.message || 'Ошибка архивирования');
-                        }
-                    } catch (error) {
-                        console.error('Ошибка:', error);
-                        this.showNotification(error.message || 'Ошибка архивирования', 'error');
-                    }
+                if (success) {
+                    faultItem.remove();
                 }
             });
         });
 
-        // Обработка отметки выполнения
         container.querySelectorAll('.mark-done-btn').forEach(btn => {
             btn.addEventListener('click', async () => {
                 const faultId = btn.dataset.id;
                 const faultItem = btn.closest('.fault-item');
 
-                try {
-                    const result = await this.api.markFaultDone(faultId);
+                const success = await this.handleMarkDone(
+                    faultId,
+                    currentUserDepartment,
+                    this.api.markFaultDone.bind(this.api),
+                    '✓ Замечание отмечено выполненным'
+                );
 
-                    if (result.status === 'success') {
-                        this.showNotification('✓ Замечание отмечено выполненным', 'success');
-                        // Обновляем отображение замечания
-                        const fault = await this.getFaultById(faultId);
-                        if (fault) {
-                            const faultHtml = this.renderFaultItem(fault, isAdmin, currentUserDepartment);
-                            faultItem.outerHTML = faultHtml;
-                        }
-                    } else {
-                        throw new Error(result.message || 'Ошибка обновления замечания');
+                if (success) {
+                    const fault = await this.getFaultById(faultId);
+                    if (fault) {
+                        const faultHtml = this.renderFaultItem(fault, isAdmin, currentUserDepartment);
+                        faultItem.outerHTML = faultHtml;
+                        this.initFaultActions(container, isAdmin, currentUserDepartment);
                     }
-                } catch (error) {
-                    console.error('Ошибка:', error);
-                    this.showNotification(error.message || 'Ошибка при обновлении замечания', 'error');
                 }
-            });
-        });
-
-        // Обработка фильтров
-        container.querySelectorAll('.fault-filter-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                container.querySelectorAll('.fault-filter-btn').forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                this.loadFaults(container, isAdmin, currentUserDepartment, btn.dataset.type);
             });
         });
     }
@@ -301,25 +238,10 @@ export default class FaultsManager {
     async getFaultById(faultId) {
         try {
             const result = await this.api.getFaults();
-            if (result.status === 'success' && result.faults) {
-                return result.faults.find(f => f._id === faultId);
-            }
-            return null;
+            return result.faults?.find(f => f._id === faultId) || null;
         } catch (error) {
             console.error('Ошибка получения замечания:', error);
             return null;
         }
-    }
-
-    showNotification(message, type = 'success') {
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}-notification`;
-        notification.innerHTML = message;
-        document.body.appendChild(notification);
-
-        setTimeout(() => {
-            notification.style.opacity = '0';
-            setTimeout(() => notification.remove(), 300);
-        }, 3000);
     }
 }

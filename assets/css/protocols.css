@@ -84,33 +84,6 @@
     margin-top: 8px;
 }
 
-
-/* Стили для тегов служб */
-.protocol-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 8px 0;
-}
-
-.protocol-tag {
-    padding: 4px 8px;
-    background-color: #e0e0e0;
-    border-radius: 12px;
-    font-size: 0.8em;
-    color: #555;
-}
-
-.protocol-tag.current {
-    background-color: #e0e0e0;
-    color: #555;
-}
-
-.protocol-tag.done {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-}
-
 /* Стили для кнопок */
 .protocol-footer {
     display: flex;

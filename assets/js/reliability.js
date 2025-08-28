@@ -1,51 +1,17 @@
-export default class ReliabilityManager {
+import BaseManager from './base-manager.js';
+
+export default class ReliabilityManager extends BaseManager {
     constructor(api, csrfToken) {
-        this.api = api;
-        this.csrfToken = csrfToken;
-        this.services = [
-            'КС-1,4', 'КС-2,3', 'КС-5,6', 'КС-7,8', 'КС-9,10', 'ГКС',
-            'АиМО', 'ЭВС', 'ЛЭС', 'СЗК', 'Связь', 'ВПО'
-        ];
+        super(api, csrfToken, 'reliability');
     }
 
     async renderReliabilityForm(isAdmin) {
         const template = await this.loadTemplate('reliability-form', {
             showForm: isAdmin,
-            services: this.services
+            services: this.services,
+            displayType: 'buttons'
         });
         return { html: template, init: () => this.initReliabilityForm(isAdmin) };
-    }
-
-    async loadTemplate(templateName, data = {}) {
-        try {
-            const scriptPath = document.currentScript?.src || new URL(import.meta.url).pathname;
-            const basePath = scriptPath.substring(0, scriptPath.lastIndexOf('/') + 1);
-            const response = await fetch(`${basePath}/${templateName}.html`);
-
-            if (!response.ok) throw new Error('Template not found');
-
-            let html = await response.text();
-
-            // Обработка services отдельно
-            if (data.services) {
-                const servicesHtml = data.services.map(service =>
-                    `<button type="button" class="service-btn" data-service="${service}">${service}</button>`
-                ).join('');
-                html = html.replace('{{services}}', servicesHtml);
-            }
-
-            // Обработка остальных данных
-            for (const [key, value] of Object.entries(data)) {
-                if (key !== 'services') {
-                    html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
-                }
-            }
-
-            return html;
-        } catch (error) {
-            console.error(`Error loading template ${templateName}:`, error);
-            return `<div class="error">Ошибка загрузки шаблона: ${templateName}</div>`;
-        }
     }
 
     initReliabilityForm(isAdmin) {
@@ -53,6 +19,7 @@ export default class ReliabilityManager {
         const reliabilityList = document.getElementById("reliabilityList");
         const uploadBtn = document.getElementById("uploadExcelBtn");
         const currentUserDepartment = localStorage.getItem("department");
+        const selectedDepartments = new Set(); // Выносим наружу
 
         if (!isAdmin && reliabilityForm) {
             reliabilityForm.style.display = 'none';
@@ -66,22 +33,9 @@ export default class ReliabilityManager {
                 });
             }
 
-            const serviceButtons = document.querySelectorAll('#serviceButtons .service-btn');
-            const selectedDepartments = new Set();
-
-            serviceButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    button.classList.toggle('active');
-                    const service = button.dataset.service;
-
-                    if (button.classList.contains('active')) {
-                        selectedDepartments.add(service);
-                    } else {
-                        selectedDepartments.delete(service);
-                    }
-                });
-            });
+            const serviceButtonsContainer = document.getElementById("serviceButtons");
+            // const selectedDepartments = new Set();
+            this.initServiceButtons(serviceButtonsContainer, selectedDepartments);
 
             reliabilityForm.addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -107,6 +61,8 @@ export default class ReliabilityManager {
                     if (result.status === 'success') {
                         this.showNotification('✓ Мероприятие успешно добавлено', 'success');
                         reliabilityForm.reset();
+                    // Исправляем очистку кнопок
+                        const serviceButtons = serviceButtonsContainer.querySelectorAll('.service-btn');
                         serviceButtons.forEach(btn => btn.classList.remove('active'));
                         selectedDepartments.clear();
                         await this.loadReliabilityItems(reliabilityList, isAdmin, currentUserDepartment);
@@ -170,13 +126,13 @@ export default class ReliabilityManager {
     renderReliabilityItem(item, isAdmin, currentUserDepartment) {
         const departmentsTags = item.departments && item.departments.length > 0
             ? `
-                <div class="order-tags">
+                <div class="department-tags">
                     ${item.departments.map(dept => {
                         // Показываем тег только если это админ или текущая служба пользователя
                         if (isAdmin || dept === currentUserDepartment) {
                             const isDone = item.done && item.done[dept];
                             return `
-                                <span class="order-tag
+                                <span class="department-tag
                                         ${dept === currentUserDepartment ? 'current' : ''}
                                         ${isDone ? 'done' : ''}">
                                     ${dept}
@@ -222,7 +178,7 @@ export default class ReliabilityManager {
                 ${departmentsTags}
 
                 <div class="reliability-date">Срок реализации: ${item.date}</div>
-                <div class="reliability-note">${item.note}</div>
+                ${item.note ? `<div class="reliability-note">${item.note}</div>` : ''}
 
                 <div class="reliability-footer">
                     ${actionButton}

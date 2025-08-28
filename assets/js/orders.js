@@ -1,80 +1,35 @@
-// orders.js
-export default class OrdersManager {
+import BaseManager from './base-manager.js';
+
+export default class OrdersManager extends BaseManager {
     constructor(api, csrfToken) {
-        this.api = api;
-        this.csrfToken = csrfToken;
-        this.services = [
-            'КС-1,4', 'КС-2,3', 'КС-5,6', 'КС-7,8', 'КС-9,10', 'ГКС',
-            'АиМО', 'ЭВС', 'ЛЭС', 'СЗК', 'Связь', 'ВПО'
-        ];
+        super(api, csrfToken, 'orders');
     }
 
     async renderOrderForm(isAdmin) {
         const template = await this.loadTemplate('order-form', {
             showForm: isAdmin,
-            services: this.services
+            services: this.services,
+            displayType: 'buttons' // Указываем тип отображения
         });
         return { html: template, init: () => this.initOrderForm(isAdmin) };
     }
 
-    async loadTemplate(templateName, data = {}) {
-        try {
-            const scriptPath = document.currentScript?.src || new URL(import.meta.url).pathname;
-            const basePath = scriptPath.substring(0, scriptPath.lastIndexOf('/') + 1);
-            const response = await fetch(`${basePath}/${templateName}.html`);
-
-            if (!response.ok) throw new Error('Template not found');
-
-            let html = await response.text();
-
-            // Обработка services отдельно
-            if (data.services) {
-                const servicesHtml = data.services.map(service =>
-                    `<button type="button" class="service-btn" data-service="${service}">${service}</button>`
-                ).join('');
-                html = html.replace('{{services}}', servicesHtml);
-            }
-
-            // Обработка остальных данных
-            for (const [key, value] of Object.entries(data)) {
-                if (key !== 'services') {
-                    html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
-                }
-            }
-
-            return html;
-        } catch (error) {
-            console.error(`Error loading template ${templateName}:`, error);
-            return `<div class="error">Ошибка загрузки шаблона: ${templateName}</div>`;
-        }
-    }
-
+    // orders.js - исправленный метод initOrderForm
     initOrderForm(isAdmin) {
         const orderForm = document.getElementById("orderForm");
         const ordersList = document.getElementById("ordersList");
         const currentUserDepartment = localStorage.getItem("department");
+        const selectedDepartments = new Set(); // Выносим наружу
 
         if (!isAdmin && orderForm) {
             orderForm.style.display = 'none';
         }
 
         if (isAdmin && orderForm) {
-            const serviceButtons = document.querySelectorAll('#serviceButtons .service-btn');
-            const selectedDepartments = new Set();
-
-            serviceButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    button.classList.toggle('active');
-                    const service = button.dataset.service;
-
-                    if (button.classList.contains('active')) {
-                        selectedDepartments.add(service);
-                    } else {
-                        selectedDepartments.delete(service);
-                    }
-                });
-            });
+            const serviceButtonsContainer = document.getElementById("serviceButtons");
+            // const selectedDepartments = new Set();
+            // Инициализируем кнопки через базовый класс
+            this.initServiceButtons(serviceButtonsContainer, selectedDepartments);
 
             orderForm.addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -95,8 +50,8 @@ export default class OrdersManager {
                     }
 
                     const data = {
-                        issue_date: formData.get('issue_date'),  // Новая дата выхода
-                        deadline: deadline,                      // Текстовый срок исполнения
+                        issue_date: formData.get('issue_date'),
+                        deadline: deadline,
                         text: formData.get('text'),
                         num: formData.get('num'),
                         departments: Array.from(selectedDepartments),
@@ -108,8 +63,12 @@ export default class OrdersManager {
                     if (result.status === 'success') {
                         this.showNotification('✓ Распоряжение успешно добавлено', 'success');
                         orderForm.reset();
+
+                        // Исправляем очистку кнопок
+                        const serviceButtons = serviceButtonsContainer.querySelectorAll('.service-btn');
                         serviceButtons.forEach(btn => btn.classList.remove('active'));
                         selectedDepartments.clear();
+
                         await this.loadOrders(ordersList, isAdmin, currentUserDepartment);
                     } else {
                         throw new Error(result.message || 'Ошибка добавления распоряжения');
@@ -172,13 +131,13 @@ export default class OrdersManager {
         // Рендерим службы как теги только для админов или если это текущая служба пользователя
         const departmentsTags = order.departments && order.departments.length > 0
             ? `
-                <div class="order-tags">
+                <div class="department-tags">
                     ${order.departments.map(dept => {
                         // Показываем тег только если это админ или текущая служба пользователя
                         if (isAdmin || dept === currentUserDepartment) {
                             const isDone = order.done && order.done[dept];
                             return `
-                                <span class="order-tag
+                                <span class="department-tag
                                         ${dept === currentUserDepartment ? 'current' : ''}
                                         ${isDone ? 'done' : ''}">
                                     ${dept}

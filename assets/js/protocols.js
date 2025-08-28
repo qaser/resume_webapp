@@ -1,12 +1,8 @@
-// protocols.js
-export default class ProtocolsManager {
+import BaseManager from './base-manager.js';
+
+export default class ProtocolsManager extends BaseManager {
     constructor(api, csrfToken) {
-        this.api = api;
-        this.csrfToken = csrfToken;
-        this.services = [
-            'КС-1,4', 'КС-2,3', 'КС-5,6', 'КС-7,8', 'КС-9,10', 'ГКС',
-            'АиМО', 'ЭВС', 'ЛЭС', 'СЗК', 'Связь', 'ВПО'
-        ];
+        super(api, csrfToken, 'orders');
     }
 
     validateDeadlineFormat(deadline) {
@@ -18,69 +14,27 @@ export default class ProtocolsManager {
     async renderProtocolForm(isAdmin) {
         const template = await this.loadTemplate('protocol-form', {
             showForm: isAdmin,
-            services: this.services
+            services: this.services,
+            displayType: 'buttons' // Указываем тип отображения
         });
         return { html: template, init: () => this.initProtocolForm(isAdmin) };
-    }
-
-    async loadTemplate(templateName, data = {}) {
-        try {
-            const scriptPath = document.currentScript?.src || new URL(import.meta.url).pathname;
-            const basePath = scriptPath.substring(0, scriptPath.lastIndexOf('/') + 1);
-            const response = await fetch(`${basePath}/${templateName}.html`);
-
-            if (!response.ok) throw new Error('Template not found');
-
-            let html = await response.text();
-
-            // Обработка services отдельно
-            if (data.services) {
-                const servicesHtml = data.services.map(service =>
-                    `<button type="button" class="service-btn" data-service="${service}">${service}</button>`
-                ).join('');
-                html = html.replace('{{services}}', servicesHtml);
-            }
-
-            // Обработка остальных данных
-            for (const [key, value] of Object.entries(data)) {
-                if (key !== 'services') {
-                    html = html.replace(new RegExp(`{{${key}}}`, 'g'), value);
-                }
-            }
-
-            return html;
-        } catch (error) {
-            console.error(`Error loading template ${templateName}:`, error);
-            return `<div class="error">Ошибка загрузки шаблона: ${templateName}</div>`;
-        }
     }
 
     initProtocolForm(isAdmin) {
         const protocolForm = document.getElementById("protocolForm");
         const protocolsList = document.getElementById("protocolsList");
         const currentUserDepartment = localStorage.getItem("department");
+        const selectedDepartments = new Set(); // Выносим наружу
 
         if (!isAdmin && protocolForm) {
             protocolForm.style.display = 'none';
         }
 
         if (isAdmin && protocolForm) {
-            const serviceButtons = document.querySelectorAll('#serviceButtons .service-btn');
+            const serviceButtonsContainer = document.getElementById("serviceButtons");
             const selectedDepartments = new Set();
 
-            serviceButtons.forEach(button => {
-                button.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    button.classList.toggle('active');
-                    const service = button.dataset.service;
-
-                    if (button.classList.contains('active')) {
-                        selectedDepartments.add(service);
-                    } else {
-                        selectedDepartments.delete(service);
-                    }
-                });
-            });
+            this.initServiceButtons(serviceButtonsContainer, selectedDepartments);
 
             protocolForm.addEventListener("submit", async (e) => {
                 e.preventDefault();
@@ -115,8 +69,11 @@ export default class ProtocolsManager {
                     if (result.status === 'success') {
                         this.showNotification('✓ Протокол успешно добавлен', 'success');
                         protocolForm.reset();
+
+                        const serviceButtons = serviceButtonsContainer.querySelectorAll('.service-btn');
                         serviceButtons.forEach(btn => btn.classList.remove('active'));
                         selectedDepartments.clear();
+
                         await this.loadProtocols(protocolsList, isAdmin, currentUserDepartment);
                     } else {
                         throw new Error(result.message || 'Ошибка добавления протокола');
@@ -179,11 +136,11 @@ export default class ProtocolsManager {
         // Рендерим службы как теги с цветовой индикацией
         const departmentsTags = protocol.departments && protocol.departments.length > 0
             ? `
-                <div class="protocol-tags">
+                <div class="department-tags">
                     ${protocol.departments.map(dept => {
                         const isDone = protocol.done && protocol.done[dept];
                         return `
-                            <span class="protocol-tag
+                            <span class="department-tag
                                     ${dept === currentUserDepartment ? 'current' : ''}
                                     ${isDone ? 'done' : ''}">
                                 ${dept}

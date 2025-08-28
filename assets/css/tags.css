@@ -1,0 +1,37 @@
+/* Стили для тегов служб */
+.department-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin: 8px 0;
+}
+
+.department-tag {
+    padding: 4px 8px;
+    background-color: #e0e0e0;
+    border-radius: 12px;
+    font-size: 0.8em;
+    color: #555;
+}
+
+.department-tag.current {
+    background-color: #e0e0e0;
+    color: #555;
+}
+
+.department-tag.done {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+}
+
+/* Адаптация для мобильных устройств */
+@media (max-width: 600px) {
+    .department-tags {
+        gap: 4px;
+    }
+
+    .department-tag {
+        padding: 3px 6px;
+        font-size: 0.7em;
+    }
+}

@@ -129,6 +129,7 @@
     color: var(--text);
     margin-bottom: 8px;
     white-space: pre-line;
+    word-wrap: break-word;
 }
 
 .order-actions {
@@ -137,29 +138,6 @@
     align-items: center;
     flex-direction: row;
     margin: 20px auto 0 auto
-}
-
-
-/* Стили для тегов служб */
-.order-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 8px 0;
-}
-
-.order-tag {
-    padding: 4px 8px;
-    background-color: #e0e0e0;
-    border-radius: 12px;
-    font-size: 0.8em;
-    color: #555;
-}
-
-.order-tag.current {
-    background-color: #e3f2fd;
-    color: #1976d2;
-    font-weight: bold;
 }
 
 /* Стили для кнопок */
@@ -193,43 +171,4 @@
     border-radius: 4px;
     color: #757575;
     cursor: pointer;
-}
-
-/* Стили для тегов распоряжений */
-.order-tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    margin: 8px 0;
-}
-
-.order-tag {
-    padding: 4px 8px;
-    background-color: #e0e0e0;
-    border-radius: 12px;
-    font-size: 0.8em;
-    color: #555;
-}
-
-.order-tag.current {
-    background-color: #e3f2fd;
-    color: #1976d2;
-    font-weight: bold;
-}
-
-.order-tag.done {
-    background-color: #e8f5e9;
-    color: #2e7d32;
-}
-
-/* Адаптация для мобильных устройств */
-@media (max-width: 600px) {
-    .order-tags {
-        gap: 4px;
-    }
-
-    .order-tag {
-        padding: 3px 6px;
-        font-size: 0.7em;
-    }
 }

@@ -92,39 +92,23 @@
     margin-top: 30px;
 }
 
-.faults-filter {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.fault-filter-btn {
-    padding: 8px 16px;
-    color: var(--accent);
-    background-color: white;
-    border: 1px solid var(--accent);;
-    border-radius: var(--radius-sm);
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.fault-filter-btn:hover {
-    background-color: rgba(59, 130, 246, 0.2)
-}
-
-.fault-filter-btn.active {
-    background-color: var(--accent);
-    color: white;
-    border-color: #3498db;
+@media (max-width: 768px) {
+    .faults-filter {
+        justify-content: center;
+    }
 }
 
 /* Карточка замечания */
 .fault-item {
-    background-color: #fff;
-    border-radius: 6px;
-    padding: 15px;
-    margin-bottom: 15px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
+    padding: 16px;
+    margin-bottom: 12px;
+    background: var(--card-bg);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    transition: all 0.2s ease;
 }
 
 .fault-item.done {
@@ -204,6 +188,10 @@
     font-size: 0.9rem;
     transition: background-color 0.2s;
 }
+.archive-btn {
+    padding: 6px 12px;
+    border-radius: 4px;
+}
 
 .mark-done-btn:hover {
     background-color: #27ae60;
@@ -244,18 +232,22 @@
 
 .faults-filter {
     display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
+    gap: 8px;
+    flex-wrap: wrap;
 }
 
 .fault-filter-btn {
-    padding: 8px 16px;
+    padding: 8px 12px;
     color: var(--accent);
     background-color: white;
     border: 1px solid var(--accent);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all 0.2s;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    min-width: min-content;
 }
 
 .fault-filter-btn:hover {
@@ -266,4 +258,38 @@
     background-color: var(--accent);
     color: white;
     border-color: var(--accent);
+}
+
+/* Мобильная адаптация */
+@media (max-width: 480px) {
+    .faults-filter {
+        gap: 6px;
+        justify-content: center;
+    }
+
+    .fault-filter-btn {
+        padding: 6px 10px;
+        font-size: 12px;
+        flex: 1;
+        min-width: 0;
+        text-overflow: ellipsis;
+        overflow: hidden;
+        max-width: 120px;
+    }
+
+    /* Специфичные стили для длинных текстов */
+    .fault-filter-btn[data-type="all"] {
+        flex: 0 1 auto;
+        min-width: 50px;
+    }
+
+    .fault-filter-btn[data-type="Газнадзор"] {
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+
+    .fault-filter-btn[data-type="Ростехнадзор"] {
+        font-size: 11px;
+        padding: 6px 8px;
+    }
 }

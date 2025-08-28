@@ -1,0 +1,96 @@
+/* Добавьте эти стили в ваш CSS файл */
+.controls-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    gap: 20px;
+    flex-wrap: wrap;
+}
+
+.sort-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background-color: white;
+    border-radius: var(--radius-sm);
+    padding: 4px;
+    border: 1px solid #e5e7eb;
+}
+
+.sort-select {
+    padding: 8px 12px;
+    border: 1px solid #e5e7eb;
+    border-radius: var(--radius-sm);
+    background-color: white;
+    color: #374151;
+    font-size: 14px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 120px;
+}
+
+.sort-select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.sort-select option {
+    padding: 8px;
+    background-color: white;
+}
+
+.sort-direction-btn {
+    padding: 8px 12px;
+    background-color: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.2s;
+    min-width: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sort-direction-btn:hover {
+    background-color: #2563eb;
+    transform: scale(1.05);
+}
+
+.sort-direction-btn:active {
+    transform: scale(0.95);
+}
+
+/* Адаптивность для мобильных устройств */
+@media (max-width: 768px) {
+    .controls-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 15px;
+    }
+
+    .sort-controls {
+        justify-content: center;
+    }
+
+    .sort-select {
+        flex: 1;
+        min-width: auto;
+    }
+}
+
+/* Анимация для кнопки направления */
+@keyframes sortPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.sort-direction-btn.changing {
+    animation: sortPulse 0.3s ease-in-out;
+}
