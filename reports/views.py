@@ -169,45 +169,37 @@ def handle_report(request):
     elif request.method == 'GET':
         try:
             service = request.GET.get('service')
-            all_reports = request.GET.get('all', '').lower() == 'true'
+            report_type = request.GET.get('type')  # daily или weekly
+            limit = int(request.GET.get('limit', 1))  # Количество отчетов для загрузки
+            skip = int(request.GET.get('skip', 0))  # Пропустить первые N отчетов
 
             if not service:
                 return JsonResponse({'status': 'error', 'message': 'Не указана служба'}, status=400)
 
             query = {'department': service}
-            if not all_reports:
-                # Получаем только последние отчеты каждого типа
-                daily_report = reports.find_one(
-                    {'department': service, 'type': 'daily'},
-                    {'_id': 0, 'data': 1, 'datetime': 1, 'type': 1},
-                    sort=[('datetime', -1)]
-                )
+            if report_type:
+                query['type'] = report_type
 
-                weekly_report = reports.find_one(
-                    {'department': service, 'type': 'weekly'},
-                    {'_id': 0, 'data': 1, 'datetime': 1, 'type': 1},
-                    sort=[('datetime', -1)]
-                )
+            # Получаем отчеты с пагинацией
+            reports_cursor = reports.find(
+                query,
+                {'_id': 0, 'data': 1, 'datetime': 1, 'type': 1}
+            ).sort('datetime', -1).skip(skip).limit(limit)
 
-                reports_list = []
-                if daily_report:
-                    daily_report['datetime'] = daily_report['datetime'].isoformat()
-                    reports_list.append(daily_report)
-                if weekly_report:
-                    weekly_report['datetime'] = weekly_report['datetime'].isoformat()
-                    reports_list.append(weekly_report)
-            else:
-                # Получаем все отчеты для навигации
-                reports_cursor = reports.find(
-                    {'department': service},
-                    {'_id': 0, 'data': 1, 'datetime': 1, 'type': 1}
-                ).sort('datetime', -1)
+            reports_list = list(reports_cursor)
+            for report in reports_list:
+                report['datetime'] = report['datetime'].isoformat()
 
-                reports_list = list(reports_cursor)
-                for report in reports_list:
-                    report['datetime'] = report['datetime'].isoformat()
+            # Получаем общее количество отчетов для навигации
+            total_count = reports.count_documents(query)
 
-            return JsonResponse({'status': 'success', 'reports': reports_list})
+            return JsonResponse({
+                'status': 'success',
+                'reports': reports_list,
+                'total_count': total_count,
+                'skip': skip,
+                'limit': limit
+            })
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 

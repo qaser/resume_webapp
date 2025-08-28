@@ -1,8 +1,11 @@
-// data-view.js
 export default class DataViewManager {
     constructor(apiService, appContainer) {
         this.api = apiService;
         this.appContainer = appContainer;
+        this.currentReports = {
+            daily: { reports: [], currentIndex: 0, total: 0, service: '' },
+            weekly: { reports: [], currentIndex: 0, total: 0, service: '' }
+        };
     }
 
     async render() {
@@ -16,10 +19,8 @@ export default class DataViewManager {
         const currentDepartmentName = document.getElementById('currentDepartmentName');
 
         if (isAdmin) {
-            // Для админа скрываем блок с информацией о текущей службе
             if (currentDepartmentInfo) currentDepartmentInfo.style.display = 'none';
 
-            // Оставляем кнопки выбора службы
             document.querySelectorAll('.service-btn').forEach(btn => {
                 btn.addEventListener('click', async () => {
                     document.querySelectorAll('.service-btn').forEach(b => b.classList.remove('active'));
@@ -29,7 +30,6 @@ export default class DataViewManager {
                 });
             });
 
-            // По умолчанию выбираем первую кнопку
             const firstBtn = document.querySelector('.service-btn');
             if (firstBtn) {
                 firstBtn.classList.add('active');
@@ -37,7 +37,6 @@ export default class DataViewManager {
                 await this.loadServiceData(firstBtn.dataset.service);
             }
         } else {
-            // Для обычных пользователей скрываем кнопки и показываем их службу
             if (serviceButtonsContainer) serviceButtonsContainer.style.display = 'none';
             if (currentDepartmentInfo) currentDepartmentInfo.style.display = 'block';
             if (currentDepartmentName) currentDepartmentName.textContent = currentUserDepartment;
@@ -73,13 +72,28 @@ export default class DataViewManager {
         dataDisplay.innerHTML = '<div class="loading">Загрузка данных...</div>';
 
         try {
-            const data = await this.api.getReports(service);
+            // Загружаем только последние отчеты каждого типа
+            const [dailyResponse, weeklyResponse] = await Promise.all([
+                this.api.getReports(service, 'daily', 1, 0),
+                this.api.getReports(service, 'weekly', 1, 0)
+            ]);
 
-            if (data.status === 'success') {
-                await this.renderServiceData(data.reports);
-            } else {
-                throw new Error(data.message || 'Неизвестная ошибка сервера');
-            }
+            // Инициализируем структуру данных
+            this.currentReports.daily = {
+                reports: dailyResponse.reports || [],
+                currentIndex: 0,
+                total: dailyResponse.total_count || 0,
+                service: service
+            };
+
+            this.currentReports.weekly = {
+                reports: weeklyResponse.reports || [],
+                currentIndex: 0,
+                total: weeklyResponse.total_count || 0,
+                service: service
+            };
+
+            await this.renderServiceData();
         } catch (error) {
             console.error('Ошибка загрузки данных:', error);
             dataDisplay.innerHTML = `
@@ -91,17 +105,8 @@ export default class DataViewManager {
         }
     }
 
-    async renderServiceData(reports) {
+    async renderServiceData() {
         const dataDisplay = document.getElementById("dataDisplay");
-
-        if (!reports || reports.length === 0) {
-            dataDisplay.innerHTML = '<div class="no-data">Нет данных для отображения</div>';
-            return;
-        }
-
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
         const currentDepartment = this.appContainer.dataset.currentDepartment;
 
         if (!currentDepartment) {
@@ -110,147 +115,52 @@ export default class DataViewManager {
         }
 
         try {
+            const now = new Date();
+            const currentYear = now.getFullYear();
+            const currentQuarter = Math.floor(now.getMonth() / 3) + 1;
             const isLES = currentDepartment === 'ЛЭС';
 
-            // Используем API методы для загрузки данных
+            // Загружаем дополнительные данные
             const [plansResponse, leaksResponse, remarksResponse, kssResponse] = await Promise.all([
                 this.api.getPlans(currentDepartment, currentYear),
                 this.api.getLeaks(currentDepartment, currentYear),
                 this.api.getRemarks(currentDepartment, currentYear),
-                isLES ? this.api.getKss(currentYear) : Promise.resolve(null)
+                isLES ? this.api.getKss(currentYear) : Promise.resolve({status: 'success', total: 0})
             ]);
 
-            // Обрабатываем ответы
             const plans = plansResponse.status === 'success' ? plansResponse.plans : null;
-            const leaks = leaksResponse.status === 'success' ? leaksResponse.leaks : null;
-            const remarks = remarksResponse.status === 'success' ? remarksResponse.remarks : null;
+            const leaks = leaksResponse.status === 'success' ? leaksResponse : {total: 0, done: 0};
+            const remarks = remarksResponse.status === 'success' ? remarksResponse.remarks : [];
             const kssTotal = kssResponse && kssResponse.status === 'success' ? kssResponse.total : 0;
-
-            const getRemarkData = (type) => {
-                if (!remarks) return null;
-                return remarks.find(r => r.value === type) || null;
-            };
-
-            const getPlanData = (type) => {
-                if (!plans) return null;
-                return plans.find(p => p.value === type) || null;
-            };
-
-            // Разделяем отчеты по типам
-            const dailyReports = reports.filter(r => r.type === 'daily').sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
-            const weeklyReports = reports.filter(r => r.type === 'weekly').sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
 
             let html = '';
 
-            // Функция для рендеринга отчета с навигацией
-            const renderReportWithNavigation = (report, reportType, reportsList, index) => {
-                const dateObj = new Date(report.datetime);
-                const date = dateObj.toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: 'numeric'});
-                const type = reportType === 'daily' ? 'Ежедневный отчёт' : 'Еженедельный отчёт';
-                const data = report.data;
-
-                return `
-                    <div class="data-section" data-type="${reportType}" data-index="${index}">
-                        <div class="data-header">
-                            <button class="nav-arrow prev-arrow" ${index === reportsList.length - 1 ? 'disabled' : ''}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
-                                    <path d="M15 18l-6-6 6-6"/>
-                                </svg>
-                            </button>
-                            <h3>${type} на ${date}</h3>
-                            <button class="nav-arrow next-arrow" ${index === 0 ? 'disabled' : ''}>
-                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
-                                    <path d="M9 18l6-6-6-6"/>
-                                </svg>
-                            </button>
-                        </div>
-
-                        ${this.renderDataGroup('Задания на день', data.tasks)}
-                        ${this.renderDataGroup('Замечания по оборудованию', data.faults)}
-
-                        ${data.apk ? this.renderCategory('АПК I уровень', data.apk) : ''}
-                        ${data.apk2 ? this.renderCategory('АПК II уровень', data.apk2) : ''}
-
-                        ${data.leak ? this.renderCategory('Утечки газа', data.leak, {
-                            total: leaks?.total || 0,
-                            done: leaks?.done || 0
-                        }) : ''}
-
-                        ${data.apk4 ? this.renderCategory('АПК IV уровень', data.apk4, {
-                            total: getRemarkData('apk4')?.total || 0
-                        }) : ''}
-
-                        ${data.ozp ? this.renderCategory('Подготовка к ОЗП', data.ozp, {
-                            total: getRemarkData('ozp')?.total || 0,
-                            done: getRemarkData('ozp')?.done || 0
-                        }) : ''}
-
-                        ${data.gaz ? this.renderCategory('Замечания Газнадзора', data.gaz, {
-                            total: getRemarkData('gaz')?.total || 0,
-                            done: getRemarkData('gaz')?.done || 0
-                        }) : ''}
-
-                        ${data.ros ? this.renderCategory('Замечания Ростехнадзора', data.ros, {
-                            total: getRemarkData('ros')?.total || 0,
-                            done: getRemarkData('ros')?.done || 0
-                        }) : ''}
-
-                        ${data.rp ? this.renderCategory('Рационализаторские предложения', data.rp, {
-                            total: getPlanData('rp')?.total || 0,
-                            currentQuarter: getPlanData('rp')?.quarters?.[currentQuarter] || 0
-                        }) : ''}
-
-                        ${data.pat ? this.renderCategory('ПАТ', data.pat, {
-                            total: getPlanData('pat')?.total || 0,
-                            currentQuarter: getPlanData('pat')?.quarters?.[currentQuarter] || 0
-                        }) : ''}
-
-                        ${data.tu ? this.renderCategory('Техническая учёба', data.tu, {
-                            total: getPlanData('tu')?.total || 0,
-                            currentQuarter: getPlanData('tu')?.quarters?.[currentQuarter] || 0
-                        }) : ''}
-
-                        ${(data.kss && isLES) ? this.renderCategory('Кольцевые сварные соединения', data.kss, {
-                            total: kssTotal
-                        }) : ''}
-                    </div>
-                `;
-            };
-
-            // Рендерим последний ежедневный отчет
-            if (dailyReports.length > 0) {
-                html += renderReportWithNavigation(dailyReports[0], 'daily', dailyReports, 0);
+            // Рендерим ежедневный отчет если есть
+            if (this.currentReports.daily.reports.length > 0) {
+                html += this.renderReport(
+                    this.currentReports.daily.reports[0],
+                    'daily',
+                    { plans, leaks, remarks, kssTotal, currentQuarter, currentDepartment }
+                );
+            } else {
+                html += '<div class="no-data">Нет ежедневных отчетов</div>';
             }
 
-            // Рендерим последний еженедельный отчет
-            if (weeklyReports.length > 0) {
-                html += renderReportWithNavigation(weeklyReports[0], 'weekly', weeklyReports, 0);
+            // Рендерим еженедельный отчет если есть
+            if (this.currentReports.weekly.reports.length > 0) {
+                html += this.renderReport(
+                    this.currentReports.weekly.reports[0],
+                    'weekly',
+                    { plans, leaks, remarks, kssTotal, currentQuarter, currentDepartment }
+                );
+            } else {
+                html += '<div class="no-data">Нет еженедельных отчетов</div>';
             }
 
             dataDisplay.innerHTML = html;
 
-            // Добавляем обработчики для кнопок навигации
-            document.querySelectorAll('.nav-arrow').forEach(arrow => {
-                arrow.addEventListener('click', function() {
-                    const section = this.closest('.data-section');
-                    const reportType = section.dataset.type;
-                    const currentIndex = parseInt(section.dataset.index);
-                    const reportsList = reportType === 'daily' ? dailyReports : weeklyReports;
-
-                    let newIndex = currentIndex;
-                    if (this.classList.contains('prev-arrow')) {
-                        newIndex = currentIndex + 1; // Более старый отчет
-                    } else if (this.classList.contains('next-arrow')) {
-                        newIndex = currentIndex - 1; // Более новый отчет
-                    }
-
-                    if (newIndex >= 0 && newIndex < reportsList.length) {
-                        const newReport = reportsList[newIndex];
-                        const newHtml = renderReportWithNavigation(newReport, reportType, reportsList, newIndex);
-                        section.outerHTML = newHtml;
-                    }
-                });
-            });
+            // Добавляем обработчики для навигации
+            this.addNavigationHandlers();
 
         } catch (error) {
             console.error('Неожиданная ошибка:', error);
@@ -263,71 +173,179 @@ export default class DataViewManager {
         }
     }
 
-    renderCategory(title, data, additionalData = {}) {
-        let items = '';
-        const categoryClass = this.getCategoryClass(title);
+    renderReport(report, reportType, additionalData) {
+        const dateObj = new Date(report.datetime);
+        const date = dateObj.toLocaleDateString('ru-RU', {day: '2-digit', month: '2-digit', year: 'numeric'});
+        const type = reportType === 'daily' ? 'Ежедневный отчёт' : 'Еженедельный отчёт';
+        const data = report.data || {};
 
-        if (additionalData.total !== undefined) {
-            let label = '';
+        // Безопасное получение reportInfo
+        const reportInfo = this.currentReports[reportType] || { currentIndex: 0, total: 0 };
 
-            if (['Рационализаторские предложения', 'ПАТ', 'Техническая учёба'].includes(title)) {
-                label = 'План на текущий год';
-            }
-            else if (['Подготовка к ОЗП', 'Замечания Газнадзора', 'Замечания Ростехнадзора', 'АПК IV уровень'].includes(title)) {
-                label = 'Всего замечаний';
-            }
-            else if (title === 'Кольцевые сварные соединения') {
-                label = 'Всего КСС';
-            }
-            else {
-                label = 'Всего за текущий год';
-            }
+        const getRemarkData = (type) => {
+            if (!additionalData.remarks) return null;
+            return additionalData.remarks.find(r => r.value === type) || null;
+        };
 
-            items += `
-                <div class="data-item">
-                    <span class="data-label">${label}:</span>
-                    <span class="data-value">${additionalData.total || 0}</span>
-                </div>
-            `;
-        }
-
-        if (additionalData.currentQuarter !== undefined) {
-            items += `
-                <div class="data-item">
-                    <span class="data-label">План на текущий квартал:</span>
-                    <span class="data-value">${additionalData.currentQuarter || 0}</span>
-                </div>
-            `;
-        }
-
-        for (const [key, value] of Object.entries(data)) {
-            if (!value && value !== 0) continue;
-
-            if (key.includes('reason')) {
-                if (!value) continue;
-
-                items += `
-                    <div class="data-item reason-item">
-                        <span class="data-label">${this.getFieldLabel(key)}:</span>
-                        <div class="data-value reason-text">${value}</div>
-                    </div>
-                `;
-            } else {
-                items += `
-                    <div class="data-item">
-                        <span class="data-label">${this.getFieldLabel(key)}:</span>
-                        <span class="data-value">${value}</span>
-                    </div>
-                `;
-            }
-        }
+        const getPlanData = (type) => {
+            if (!additionalData.plans) return null;
+            return additionalData.plans.find(p => p.value === type) || null;
+        };
 
         return `
-            <div class="data-group">
-                <div class="data-group-title ${categoryClass}">${title}</div>
-                ${items}
+            <div class="data-section" data-type="${reportType}">
+                <div class="data-header">
+                    <button class="nav-arrow prev-arrow" data-type="${reportType}" data-direction="prev">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                             stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                            <path d="M15 18l-6-6 6-6"/>
+                        </svg>
+                    </button>
+                    <h3>${type} на ${date}</h3>
+                    <button class="nav-arrow next-arrow" data-type="${reportType}" data-direction="next">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"
+                             stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </button>
+                </div>
+
+                ${data.tasks ? this.renderDataGroup('Задания на день', data.tasks) : ''}
+                ${data.faults ? this.renderDataGroup('Замечания по оборудованию', data.faults) : ''}
+
+                ${data.apk ? this.renderCategory('АПК I уровень', data.apk) : ''}
+                ${data.apk2 ? this.renderCategory('АПК II уровень', data.apk2) : ''}
+
+                ${data.leak ? this.renderCategory('Утечки газа', data.leak, {
+                    total: additionalData.leaks?.total || 0,
+                    done: additionalData.leaks?.done || 0
+                }) : ''}
+
+                ${data.apk4 ? this.renderCategory('АПК IV уровень', data.apk4, {
+                    total: getRemarkData('apk4')?.total || 0
+                }) : ''}
+
+                ${data.ozp ? this.renderCategory('Подготовка к ОЗП', data.ozp, {
+                    total: getRemarkData('ozp')?.total || 0,
+                    done: getRemarkData('ozp')?.done || 0
+                }) : ''}
+
+                ${data.gaz ? this.renderCategory('Замечания Газнадзора', data.gaz, {
+                    total: getRemarkData('gaz')?.total || 0,
+                    done: getRemarkData('gaz')?.done || 0
+                }) : ''}
+
+                ${data.ros ? this.renderCategory('Замечания Ростехнадзора', data.ros, {
+                    total: getRemarkData('ros')?.total || 0,
+                    done: getRemarkData('ros')?.done || 0
+                }) : ''}
+
+                ${data.rp ? this.renderCategory('Рационализаторские предложения', data.rp, {
+                    total: getPlanData('rp')?.total || 0,
+                    currentQuarter: getPlanData('rp')?.quarters?.[additionalData.currentQuarter] || 0
+                }) : ''}
+
+                ${data.pat ? this.renderCategory('ПАТ', data.pat, {
+                    total: getPlanData('pat')?.total || 0,
+                    currentQuarter: getPlanData('pat')?.quarters?.[additionalData.currentQuarter] || 0
+                }) : ''}
+
+                ${data.tu ? this.renderCategory('Техническая учёба', data.tu, {
+                    total: getPlanData('tu')?.total || 0,
+                    currentQuarter: getPlanData('tu')?.quarters?.[additionalData.currentQuarter] || 0
+                }) : ''}
+
+                ${(data.kss && additionalData.currentDepartment === 'ЛЭС') ? this.renderCategory('Кольцевые сварные соединения', data.kss, {
+                    total: additionalData.kssTotal
+                }) : ''}
             </div>
         `;
+    }
+
+    addNavigationHandlers() {
+        document.querySelectorAll('.nav-arrow').forEach(arrow => {
+            arrow.removeEventListener('click', this.navigationHandler);
+            arrow.addEventListener('click', this.handleNavigation.bind(this));
+        });
+
+        // Обновляем состояние кнопок
+        this.updateNavigationButtons();
+    }
+
+    handleNavigation(event) {
+        const reportType = event.currentTarget.dataset.type;
+        const direction = event.currentTarget.dataset.direction;
+        this.navigateReport(reportType, direction);
+    }
+
+    updateNavigationButtons() {
+        Object.keys(this.currentReports).forEach(reportType => {
+            const reportInfo = this.currentReports[reportType] || { currentIndex: 0, total: 0 };
+            const prevButton = document.querySelector(`.nav-arrow.prev-arrow[data-type="${reportType}"]`);
+            const nextButton = document.querySelector(`.nav-arrow.next-arrow[data-type="${reportType}"]`);
+
+            if (prevButton) {
+                prevButton.disabled = reportInfo.currentIndex >= reportInfo.total - 1;
+            }
+            if (nextButton) {
+                nextButton.disabled = reportInfo.currentIndex <= 0;
+            }
+        });
+    }
+
+    async navigateReport(reportType, direction) {
+        // Безопасное получение reportInfo
+        const reportInfo = this.currentReports[reportType] || { currentIndex: 0, total: 0, service: '' };
+
+        if (!reportInfo.service) {
+            console.error('Service not defined for report type:', reportType);
+            return;
+        }
+
+        let newIndex = reportInfo.currentIndex;
+        let skip = 0;
+
+        if (direction === 'next' && newIndex > 0) {
+            newIndex--;
+            skip = newIndex;
+        } else if (direction === 'prev' && newIndex < reportInfo.total - 1) {
+            newIndex++;
+            skip = newIndex;
+        } else {
+            return; // Достигнуты границы
+        }
+
+        try {
+            const dataDisplay = document.getElementById("dataDisplay");
+            const loadingSection = dataDisplay.querySelector(`[data-type="${reportType}"]`);
+
+            if (loadingSection) {
+                loadingSection.innerHTML = '<div class="loading">Загрузка...</div>';
+            }
+
+            // Загружаем конкретный отчет
+            const response = await this.api.getReports(
+                reportInfo.service,
+                reportType,
+                1,
+                skip
+            );
+
+            if (response.status === 'success') {
+                // Обновляем данные
+                this.currentReports[reportType].reports = response.reports || [];
+                this.currentReports[reportType].currentIndex = skip;
+
+                // Перерисовываем данные
+                await this.renderServiceData();
+            }
+        } catch (error) {
+            console.error('Ошибка навигации:', error);
+            alert('Ошибка загрузки отчета: ' + error.message);
+
+            // Восстанавливаем предыдущее состояние
+            await this.renderServiceData();
+        }
     }
 
     renderDataGroup(title, value) {
@@ -363,6 +381,61 @@ export default class DataViewManager {
         };
 
         return categoryMap[title] || '';
+    }
+
+    renderCategory(title, data, additionalData = {}) {
+        const categoryClass = this.getCategoryClass(title);
+        let items = '';
+
+        if (additionalData.total !== undefined) {
+            let label = 'Всего за текущий год';
+
+            if (['Рационализаторские предложения', 'ПАТ', 'Техническая учёба'].includes(title)) {
+                label = 'План на текущий год';
+            }
+            else if (['Подготовка к ОЗП', 'Замечания Газнадзора', 'Замечания Ростехнадзора', 'АПК IV уровень'].includes(title)) {
+                label = 'Всего замечаний';
+            }
+            else if (title === 'Кольцевые сварные соединения') {
+                label = 'Всего КСС';
+            }
+
+            items += `
+                <div class="data-item">
+                    <span class="data-label">${label}:</span>
+                    <span class="data-value">${additionalData.total || 0}</span>
+                </div>
+            `;
+        }
+
+        for (const [key, value] of Object.entries(data)) {
+            if (!value && value !== 0) continue;
+
+            if (key.includes('reason')) {
+                if (!value) continue;
+
+                items += `
+                    <div class="data-item reason-item">
+                        <span class="data-label">${this.getFieldLabel(key)}:</span>
+                        <div class="data-value reason-text">${value}</div>
+                    </div>
+                `;
+            } else {
+                items += `
+                    <div class="data-item">
+                        <span class="data-label">${this.getFieldLabel(key)}:</span>
+                        <span class="data-value">${value}</span>
+                    </div>
+                `;
+            }
+        }
+
+        return `
+            <div class="data-group">
+                <div class="data-group-title ${categoryClass}">${title}</div>
+                ${items}
+            </div>
+        `;
     }
 
     getFieldLabel(fieldName) {

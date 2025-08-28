@@ -16,10 +16,38 @@ class ApiService {
         return await response.json();
     }
 
-    // Получение отчетов по службе
-    async getReports(service) {
-        const response = await fetch(`/api/reports/?service=${encodeURIComponent(service)}&all=true`);
-        return await response.json();
+    async getReports(service, type = null, limit = 1, skip = 0) {
+        let url = `/api/reports/?service=${encodeURIComponent(service)}&limit=${limit}&skip=${skip}`;
+        if (type) {
+            url += `&type=${type}`;
+        }
+        const response = await fetch(url);
+        const data = await response.json();
+
+        // Добавляем проверку на структуру ответа
+        if (data.status === 'success') {
+            return data;
+        } else {
+            throw new Error(data.message || 'Ошибка загрузки отчетов');
+        }
+    }
+
+    // Получение только последних отчетов (для первоначальной загрузки)
+    async getLatestReports(service) {
+        try {
+            const [dailyResponse, weeklyResponse] = await Promise.all([
+                this.getReports(service, 'daily', 1, 0),
+                this.getReports(service, 'weekly', 1, 0)
+            ]);
+
+            return {
+                daily: dailyResponse,
+                weekly: weeklyResponse
+            };
+        } catch (error) {
+            console.error('Ошибка загрузки последних отчетов:', error);
+            throw error;
+        }
     }
 
     // Получение планов
