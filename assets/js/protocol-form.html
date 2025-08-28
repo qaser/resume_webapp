@@ -3,8 +3,27 @@
 
     <form id="protocolForm">
         <div class="form-group">
-            <label for="protocolDate">Дата исполнения</label>
-            <input type="date" id="protocolDate" name="date" required>
+            <label for="protocolNum">Номер протокола</label>
+            <input id="protocolNum" name="protocol_num" required>
+        </div>
+
+        <div class="form-group">
+            <label for="protocolName">Название протокола</label>
+            <input id="protocolName" name="protocol_name" required>
+        </div>
+
+        <div class="form-group">
+            <label for="protocolIssueDate">Дата выхода протокола</label>
+            <input type="date" id="protocolIssueDate" name="issue_date" required>
+        </div>
+
+        <div class="form-group">
+            <label for="protocolDeadline">Дата исполнения (дд.мм.гггг или текст)</label>
+            <input type="text" id="protocolDeadline" name="deadline" required
+                   placeholder="Например: 15.12.2024 или любой текст">
+            <div class="error-message" id="deadlineError" style="display: none;">
+                Введите дату в формате дд.мм.гггг или текстовое описание
+            </div>
         </div>
 
         <div class="form-group">

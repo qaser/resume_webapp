@@ -87,10 +87,18 @@ export default class OrdersManager {
                     }
 
                     const formData = new FormData(orderForm);
+                    const deadline = formData.get('deadline');
+
+                    // Проверяем формат срока исполнения
+                    if (!this.validateDeadlineFormat(deadline)) {
+                        throw new Error("Введите срок исполнения в формате дд.мм.гггг или текстовое описание");
+                    }
+
                     const data = {
-                        date: formData.get('date'),
-                        num: formData.get('num'),
+                        issue_date: formData.get('issue_date'),  // Новая дата выхода
+                        deadline: deadline,                      // Текстовый срок исполнения
                         text: formData.get('text'),
+                        num: formData.get('num'),
                         departments: Array.from(selectedDepartments),
                         csrfmiddlewaretoken: this.csrfToken
                     };
@@ -206,12 +214,17 @@ export default class OrdersManager {
                 </button>
             `
             : '';
-
+        const issueDate = order.issue_date
+            ? new Date(order.issue_date).toLocaleDateString()
+            : '';
         return `
             <div class="order-item" data-id="${order._id}">
                 <div class="order-header">
-                    <div class="order-num">№${order.num}</div>
-                    <div class="order-date">${new Date(order.date).toLocaleDateString()}</div>
+                    <div class="order-num">№${order.num} от ${issueDate}</div>
+                </div>
+
+                <div class="order-deadline">
+                    <strong>Срок исполнения:</strong> ${order.deadline || 'не указан'}
                 </div>
 
                 ${departmentsTags}
@@ -224,6 +237,12 @@ export default class OrdersManager {
                 </div>
             </div>
         `;
+    }
+
+    validateDeadlineFormat(deadline) {
+        // Проверяем формат дд.мм.гггг
+        const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\.(0[1-9]|1[0-2])\.\d{4}$/;
+        return dateRegex.test(deadline) || deadline.trim().length > 0;
     }
 
     initOrderActions(container, isAdmin, currentUserDepartment) {

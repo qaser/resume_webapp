@@ -128,6 +128,18 @@ class ApiService {
         return await response.json();
     }
 
+    async editProtocol(id, data) {
+        const response = await fetch(`/api/protocols/${id}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': this.csrfToken,
+            },
+            body: JSON.stringify(data)
+        });
+        return await response.json();
+    }
+
     async getOrders() {
         const response = await fetch('/api/orders/');
         return await response.json();

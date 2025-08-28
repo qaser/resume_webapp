@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const currentDepartmentEl = document.getElementById("currentDepartment");
     const dataViewManager = new DataViewManager(api, appContainer);
     const dataInputManager = new DataInputManager(api, appContainer, csrfToken);
-    window.dataViewManager = dataViewManager;
+    // window.dataViewManager = dataViewManager;
 
     if (currentDepartment && logoutBtn && currentDepartmentEl) {
         currentDepartmentEl.textContent = currentDepartment;

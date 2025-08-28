@@ -9,6 +9,12 @@ export default class ProtocolsManager {
         ];
     }
 
+    validateDeadlineFormat(deadline) {
+        // Проверяем формат дд.мм.гггг
+        const dateRegex = /^(0[1-9]|[12][0-9]|3[01])\.(0[1-9]|1[0-2])\.\d{4}$/;
+        return dateRegex.test(deadline) || deadline.trim().length > 0;
+    }
+
     async renderProtocolForm(isAdmin) {
         const template = await this.loadTemplate('protocol-form', {
             showForm: isAdmin,
@@ -87,8 +93,18 @@ export default class ProtocolsManager {
                     }
 
                     const formData = new FormData(protocolForm);
+                    const deadline = formData.get('deadline');
+
+                    // Проверяем формат срока исполнения
+                    if (!this.validateDeadlineFormat(deadline)) {
+                        throw new Error("Введите дату исполнения в формате дд.мм.гггг или текстовое описание");
+                    }
+
                     const data = {
-                        date: formData.get('date'),
+                        issue_date: formData.get('issue_date'),  // Новая дата выхода
+                        protocol_num: formData.get('protocol_num'),  // Номер протокола
+                        protocol_name: formData.get('protocol_name'),  // Название протокола
+                        deadline: deadline,  // Текстовый срок исполнения
                         text: formData.get('text'),
                         departments: Array.from(selectedDepartments),
                         csrfmiddlewaretoken: this.csrfToken
@@ -202,20 +218,24 @@ export default class ProtocolsManager {
             `
             : '';
 
+        // Форматируем дату выхода
+        const issueDate = protocol.issue_date
+            ? new Date(protocol.issue_date).toLocaleDateString()
+            : '';
+        const editButton = isAdmin ? `<button class="edit-btn" data-id="${protocol._id}">Редактировать</button>` : '';
         return `
             <div class="protocol-item" data-id="${protocol._id}">
                 <div class="protocol-header">
-                    <div class="protocol-date">
-                        ${new Date(protocol.date).toLocaleDateString()}
-                    </div>
+                    <div class="protocol-num">№${protocol.protocol_num} от ${issueDate}г. '${protocol.protocol_name || 'Без названия'}'</div>
                 </div>
-
+                <div class="protocol-deadline">
+                    <strong>Срок исполнения:</strong> ${protocol.deadline || 'не указан'}
+                </div>
                 ${departmentsTags}
-
                 <div class="protocol-text">${protocol.text}</div>
-
                 <div class="protocol-footer">
                     ${actionButton}
+                    ${editButton}
                     ${archiveButton}
                 </div>
             </div>
@@ -275,6 +295,33 @@ export default class ProtocolsManager {
                 }
             });
         });
+
+        container.querySelectorAll('.edit-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const protocolId = btn.dataset.id;
+                const protocol = await this.getProtocolById(protocolId);
+                if (protocol) {
+                    this.fillEditForm(protocol);
+                }
+            });
+        });
+    }
+
+    fillEditForm(protocol) {
+        const form = document.getElementById('protocolForm');
+        form.dataset.editId = protocol._id;
+        form.querySelector('[name="protocol_num"]').value = protocol.protocol_num;
+        form.querySelector('[name="protocol_name"]').value = protocol.protocol_name;
+        form.querySelector('[name="issue_date"]').value = protocol.issue_date.split('T')[0];
+        form.querySelector('[name="deadline"]').value = protocol.deadline;
+        form.querySelector('[name="text"]').value = protocol.text;
+
+        const serviceButtons = form.querySelectorAll('.service-btn');
+        serviceButtons.forEach(btn => {
+            btn.classList.toggle('active', protocol.departments.includes(btn.dataset.service));
+        });
+
+        form.querySelector('button[type="submit"]').textContent = 'Сохранить изменения';
     }
 
     async getProtocolById(protocolId) {

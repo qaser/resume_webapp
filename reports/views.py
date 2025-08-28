@@ -443,17 +443,21 @@ def handle_protocols(request):
             # Получаем только неархивированные протоколы
             queryset = list(protocols.find(
                 {'archived': {'$ne': True}},
-                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1, 'departments': 1}
-            ).sort('date', 1))
+                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1,
+                 'departments': 1, 'issue_date': 1, 'protocol_num': 1, 'protocol_name': 1, 'deadline': 1}
+            ).sort('issue_date', -1))  # Сортируем по дате выхода (новые сверху)
 
             # Преобразуем ObjectId в строку и форматируем даты
             formatted_protocols = []
             for protocol in queryset:
                 formatted = {
                     '_id': str(protocol['_id']),
-                    'date': protocol['date'].isoformat(),
-                    'text': protocol['text'],
+                    'protocol_num': protocol.get('protocol_num', ''),
+                    'protocol_name': protocol.get('protocol_name', ''),
+                    'issue_date': protocol['issue_date'].isoformat() if 'issue_date' in protocol else '',
+                    'deadline': protocol.get('deadline', ''),  # Текстовое поле
                     'departments': protocol['departments'],
+                    'text': protocol['text'],
                     'done': {}
                 }
 
@@ -479,7 +483,10 @@ def handle_protocols(request):
         try:
             data = json.loads(request.body)
             protocol_data = {
-                'date': datetime.fromisoformat(data['date']),
+                'issue_date': datetime.fromisoformat(data['issue_date']),  # Новая дата выхода
+                'protocol_num': data['protocol_num'],  # Номер протокола
+                'protocol_name': data['protocol_name'],  # Название протокола
+                'deadline': data['deadline'],  # Текстовый срок исполнения
                 'text': data['text'],
                 'departments': data['departments'],
                 'archived': False,
@@ -494,8 +501,29 @@ def handle_protocols(request):
             })
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-
+    elif request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            protocol_id = request.path.split('/')[-2]  # Из URL /api/protocols/{id}/
+            update_data = {
+                'protocol_num': data.get('protocol_num'),
+                'protocol_name': data.get('protocol_name'),
+                'issue_date': datetime.fromisoformat(data.get('issue_date')),
+                'deadline': data.get('deadline'),
+                'text': data.get('text'),
+                'departments': data.get('departments')
+            }
+            result = protocols.update_one(
+                {'_id': ObjectId(protocol_id)},
+                {'$set': update_data}
+            )
+            if result.modified_count:
+                return JsonResponse({'status': 'success'})
+            return JsonResponse({'status': 'error', 'message': 'Not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
     return HttpResponseBadRequest(json.dumps({'status': 'error', 'message': 'Неверный метод запроса'}))
+
 
 @csrf_exempt
 def archive_protocol(request, protocol_id):
@@ -547,15 +575,17 @@ def handle_orders(request):
             # Получаем только неархивированные распоряжения
             queryset = list(orders.find(
                 {'archived': {'$ne': True}},
-                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1, 'num': 1, 'departments': 1}
-            ).sort('date', 1))
+                {'_id': 1, 'date': 1, 'text': 1, 'archived': 1, 'done': 1, 'num': 1, 'departments': 1, 'issue_date': 1, 'deadline': 1}
+            ).sort('issue_date', -1))  # Сортируем по дате выхода (новые сверху)
+
             # Преобразуем ObjectId в строку и форматируем даты
             formatted_orders = []
             for order in queryset:
                 formatted = {
                     '_id': str(order['_id']),
                     'num': order['num'],
-                    'date': order['date'].isoformat(),
+                    'issue_date': order['issue_date'].isoformat() if 'issue_date' in order else '',
+                    'deadline': order.get('deadline', ''),  # Текстовое поле
                     'departments': order['departments'],
                     'text': order['text'],
                     'done': {}
@@ -566,7 +596,6 @@ def handle_orders(request):
                         if isinstance(date, datetime):
                             formatted['done'][dept] = date.isoformat()
                         else:
-                            # Если дата уже в строковом формате (на всякий случай)
                             formatted['done'][dept] = date
                 formatted_orders.append(formatted)
             return JsonResponse({
@@ -575,11 +604,13 @@ def handle_orders(request):
             })
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
     elif request.method == 'POST':
         try:
             data = json.loads(request.body)
             order_data = {
-                'date': datetime.fromisoformat(data['date']),
+                'issue_date': datetime.fromisoformat(data['issue_date']),  # Новая дата выхода
+                'deadline': data['deadline'],  # Текстовый срок исполнения
                 'text': data['text'],
                 'num': data['num'],
                 'departments': data['departments'],
